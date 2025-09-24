@@ -16,6 +16,8 @@ func CreatePerson(w http.ResponseWriter, r *http.Request){
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
+	len := len(database.People)
+	newPerson.ID = len + 1
 	database.People = append(database.People, newPerson)
 	w.WriteHeader(http.StatusCreated)
 	helpers.HandleEncoder(w, newPerson)
