@@ -9,11 +9,10 @@ import (
 )
 
 func RunServer() {
-	cfg := config.NewConfig()
-
+	config.Init()
 	routes.SetupRoutes()
-	fmt.Println("Starting server at:", cfg.Port)
-	err := http.ListenAndServe(":"+cfg.Port, routes.Mux)
+	fmt.Println("Starting server at:", config.ENV.Port)
+	err := http.ListenAndServe(":"+config.ENV.Port, routes.Mux)
 	if err != nil {
 		fmt.Println("Error starting server:", err)
 		

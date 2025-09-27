@@ -7,7 +7,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-type Config struct {
+type config struct {
 	Port      string
 	// DBUrl     string
 	// JWTSecret string
@@ -15,7 +15,10 @@ type Config struct {
 }
 
 
-func LoadEnv() {
+var ENV *config
+
+
+func loadEnv() {
 	if err := godotenv.Load(); err != nil {
 		log.Println("⚠️  No .env file found. Using system environment variables.")
 	}
@@ -30,15 +33,10 @@ func getEnv(key string) string {
 }
 
 
-func NewConfig() *Config {
-	LoadEnv()
+func Init() {
+	loadEnv() 
 
-	cfg := &Config{
-		Port:      getEnv("PORT"),
-		// DBUrl:     getEnv("DATABASE_URL"),
-		// JWTSecret: getEnv("JWT_SECRET"),
-		// Env:       getEnv("APP_ENV"),
+	ENV = &config{
+		Port: getEnv("PORT"),
 	}
-
-	return cfg
 }
