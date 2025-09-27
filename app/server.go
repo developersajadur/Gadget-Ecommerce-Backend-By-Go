@@ -4,15 +4,18 @@ import (
 	"fmt"
 	"net/http"
 
+	"ecommerce/app/config"
 	"ecommerce/app/routes"
 )
 
 func RunServer() {
-	routes.SetupRoutes()
+	cfg := config.NewConfig()
 
-	fmt.Println("Starting server at :8080")
-	err := http.ListenAndServe(":8080", routes.Mux)
+	routes.SetupRoutes()
+	fmt.Println("Starting server at:", cfg.Port)
+	err := http.ListenAndServe(":"+cfg.Port, routes.Mux)
 	if err != nil {
 		fmt.Println("Error starting server:", err)
+		
 	}
 }
