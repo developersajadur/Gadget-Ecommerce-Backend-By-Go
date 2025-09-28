@@ -13,13 +13,12 @@ func CreatePerson(w http.ResponseWriter, r *http.Request){
 
 	err:= helpers.HandleDecoder(r, &newPerson)
 	if err!= nil{
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		helpers.SendError(w, err, http.StatusBadRequest, "failed to decode")
 		return
 	}
 	len := len(database.People)
 	newPerson.ID = len + 1
 	database.People = append(database.People, newPerson)
-	w.WriteHeader(http.StatusCreated)
-	helpers.HandleEncoder(w, newPerson)
+	helpers.SendResponse(w, newPerson, http.StatusCreated, "Person Created Successfully")
 
 }
