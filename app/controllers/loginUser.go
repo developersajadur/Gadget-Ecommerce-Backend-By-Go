@@ -31,29 +31,47 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var user *database.Person
 	for _, person := range database.People {
-		if person.Email != creds.Email {
-			helpers.SendError(w, nil, http.StatusNotFound, "User Not Found By This Email")
-			return
-		} else if person.Password != creds.Password {
-			helpers.SendError(w, nil, http.StatusUnauthorized, "Password is Incorrect")
-			return
+		if person.Email == creds.Email {
+			user = &person
+			break
 		}
-		payload := utils.JwtCustomClaims{
-			UserId: person.ID,
-			Name:   person.Name,
-			Age:    person.Age,
-			Email:  person.Email,
-		}
-		jwtSecret := []byte(config.ENV.JwtSecret)
-		token, err := utils.GenerateJWT(jwtSecret, payload)
-		if err != nil {
-			helpers.SendError(w, err, http.StatusInternalServerError, "Failed to generate token")
-			return
-		}
-		helpers.SendResponse(w, map[string]string{"token": token}, http.StatusOK, "Login successful")
-		return
-
 	}
 
+	if user == nil {
+		helpers.SendError(w, nil, http.StatusNotFound, "User not found")
+		return
+	}
+
+	if user.Password != creds.Password {
+		helpers.SendError(w, nil, http.StatusUnauthorized, "Password is incorrect")
+		return
+	}
+
+	// Generate JWT
+	payload := utils.JwtCustomClaims{
+		UserId: user.ID,
+		Name:   user.Name,
+		Age:    user.Age,
+		Email:  user.Email,
+	}
+	token, err := utils.GenerateJWT([]byte(config.ENV.JwtSecret), payload)
+	if err != nil {
+		helpers.SendError(w, err, http.StatusInternalServerError, "Failed to generate token")
+		return
+	}
+
+	// Optional: set cookie
+	http.SetCookie(w, &http.Cookie{
+		Name:     "token",
+		Value:    token,
+		HttpOnly: true,
+		Secure:   false, // set true in production
+		Path:    "/",
+		SameSite: http.SameSiteLaxMode,
+		MaxAge:   3600 * 24 * 3,
+	})
+
+	helpers.SendResponse(w, map[string]string{"token": token}, http.StatusOK, "Login successful")
 }
