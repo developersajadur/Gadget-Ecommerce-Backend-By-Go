@@ -12,5 +12,5 @@ func init() {
 }
 
 func main() {
-	utils.RunServer()
+	app.RunServer()
 }

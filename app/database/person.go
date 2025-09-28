@@ -1,30 +1,30 @@
 package database
 
+type Person struct {
+	ID       int    `json:"id"`
+	Name     string `json:"name"`
+	Age      int    `json:"age"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
 
- type Person struct {
-	Name string `json:"name"`
-	Age  int  `json:"age"`
-	ID   int    `json:"id"`
- }
+// Predefined list of people
+var Peoples = []Person{
+	{ID: 1, Name: "Liam", Age: 24, Email: "liam@example.com", Password: "pass123"},
+	{ID: 2, Name: "Olivia", Age: 29, Email: "olivia@example.com", Password: "pass234"},
+	{ID: 3, Name: "Noah", Age: 31, Email: "noah@example.com", Password: "pass345"},
+	{ID: 4, Name: "Emma", Age: 27, Email: "emma@example.com", Password: "pass456"},
+	{ID: 5, Name: "Oliver", Age: 35, Email: "oliver@example.com", Password: "pass567"},
+	{ID: 6, Name: "Ava", Age: 28, Email: "ava@example.com", Password: "pass678"},
+	{ID: 7, Name: "Elijah", Age: 33, Email: "elijah@example.com", Password: "pass789"},
+	{ID: 8, Name: "Sophia", Age: 26, Email: "sophia@example.com", Password: "pass890"},
+	{ID: 9, Name: "William", Age: 30, Email: "william@example.com", Password: "pass901"},
+	{ID: 10, Name: "Isabella", Age: 25, Email: "isabella@example.com", Password: "pass012"},
+}
 
 
+var People = []Person{}
 
- // Predefined list of people
-	var Peoples = []Person{
-		{ID: 1, Name: "Alice", Age: 30},
-		{ID: 2, Name: "Bob", Age: 25},
-		{ID: 3, Name: "Charlie", Age: 35},
-		{ID: 4, Name: "Diana", Age: 28},
-		{ID: 5, Name: "Ethan", Age: 32},
-		{ID: 6, Name: "Fiona", Age: 27},
-		{ID: 7, Name: "George", Age: 29},
-		{ID: 8, Name: "Hannah", Age: 31},
-		{ID: 9, Name: "Ian", Age: 26},
-		{ID: 10, Name: "Jane", Age: 33},
-	}
-
-  var People = []Person{}
-
-  func HandleInit(){
+func HandleInit() {
 	People = Peoples
-  }
+}

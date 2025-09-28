@@ -1,9 +1,8 @@
-package utils
+package app
 
 import (
 	"fmt"
 	"net/http"
-
 	"ecommerce/app/config"
 	"ecommerce/app/routes"
 )

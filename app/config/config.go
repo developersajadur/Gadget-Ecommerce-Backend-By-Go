@@ -9,6 +9,7 @@ import (
 
 type config struct {
 	Port      string
+	JwtSecret string
 	// DBUrl     string
 	// JWTSecret string
 	// Env       string
@@ -38,5 +39,6 @@ func Init() {
 
 	ENV = &config{
 		Port: getEnv("PORT"),
+		JwtSecret: getEnv("JWT_SECRET"),
 	}
 }
