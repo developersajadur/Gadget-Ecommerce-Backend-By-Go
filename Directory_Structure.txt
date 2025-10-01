@@ -1,0 +1,45 @@
+ecommerce/
+├── cmd/
+│   └── server/
+│       └── main.go         
+├── internal/
+│   ├── config/
+│   │   └── config.go        
+│   ├── domain/
+│   │   ├── user.go         
+│   │   ├── product.go    
+│   │   └── order.go
+│   ├── usecase/
+│   │   ├── user_usecase.go
+│   │   ├── product_usecase.go
+│   │   └── order_usecase.go
+│   ├── delivery/
+│   │   └── http/
+|   |       ├── routes.go 
+│   │       ├── user_handler.go
+│   │       ├── product_handler.go
+│   │       └── order_handler.go
+│   └── infra/
+│       ├── db/
+│       │   └── connection.go
+│       ├── repository/
+│       │   ├── user_repo.go
+│       │   ├── product_repo.go
+│       │   └── order_repo.go
+│       └── middleware/
+│           ├── auth.go
+│           ├── cors.go
+│           └── recovery.go
+├── pkg/
+│   └── utils/               # Logger, helpers, etc.
+├── migrations/
+├── scripts/
+├── .env
+├── go.mod
+└── go.sum
+
+
+
+
+
+make run
