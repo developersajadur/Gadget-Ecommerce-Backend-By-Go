@@ -8,5 +8,5 @@ import (
 
 func GetPersons(w http.ResponseWriter, r *http.Request){
 
-	helpers.HandleEncoder(w, database.People)
+	 helpers.SendResponse(w, database.People, http.StatusOK, "fetched all peoples Successfully")
 }

@@ -16,18 +16,18 @@ func GetPersonById(w http.ResponseWriter, r *http.Request){
 
 	id, err := strconv.Atoi(productId)
 	if err != nil || id <= 0 {
-		http.Error(w, "Invalid person ID", http.StatusBadRequest)
+			helpers.SendError(w, err, http.StatusBadRequest, "Invalid person ID")
 		return
 	}
 
 	for _, person := range database.People{
 		if person.ID == id{
-			 helpers.HandleEncoder(w, person)
+			 helpers.SendResponse(w, person, http.StatusOK, "fetched the person Successfully")
 			 return
 		}
 	}
-
-	http.Error(w, "Person not found", http.StatusNotFound)
+		helpers.SendError(w, nil, http.StatusNotFound, "Person not found")
+		
 
 
 }

@@ -5,7 +5,6 @@ import (
 	"ecommerce/app/database"
 )
 
-// init runs automatically before main()
 func init() {
 
 	database.HandleInit()
@@ -13,5 +12,5 @@ func init() {
 }
 
 func main() {
-	utils.RunServer()
+	app.RunServer()
 }

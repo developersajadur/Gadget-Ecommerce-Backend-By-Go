@@ -9,8 +9,12 @@ import (
 
 type config struct {
 	Port      string
+<<<<<<< HEAD
 	Db_User_Name string
 	Db_Password string
+=======
+	JwtSecret string
+>>>>>>> 6e59bf6cae22451e31c634804160434ec6a8fda7
 	// DBUrl     string
 	// JWTSecret string
 	// Env       string
@@ -42,7 +46,11 @@ func Init() {
 
 	ENV = &config{
 		Port: getEnv("PORT"),
+<<<<<<< HEAD
 		Db_User_Name: getEnv("DB_USER_NAME"),
 		Db_Password: getEnv("DB_PASSWORD"),
+=======
+		JwtSecret: getEnv("JWT_SECRET"),
+>>>>>>> 6e59bf6cae22451e31c634804160434ec6a8fda7
 	}
 }
