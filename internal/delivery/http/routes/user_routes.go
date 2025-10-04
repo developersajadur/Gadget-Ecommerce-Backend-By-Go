@@ -14,5 +14,6 @@ func RegisterUserRoutes(mux *http.ServeMux, db *sqlx.DB) {
 	uc := usecase.NewUserUsecase(repo)
 	userHandler := handlers.NewUserHandler(uc)
 
-	mux.Handle("POST /users", http.HandlerFunc(userHandler.Register))
+	mux.Handle("POST /users/create", http.HandlerFunc(userHandler.Register))
+	mux.Handle("POST /users/login", http.HandlerFunc(userHandler.Login))
 }

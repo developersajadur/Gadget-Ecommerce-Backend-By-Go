@@ -2,6 +2,8 @@ package repository
 
 import (
 	"ecommerce/internal/domain"
+	"ecommerce/pkg/utils"
+	"errors"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -10,6 +12,7 @@ import (
 type UserRepository interface {
 	Create(user *domain.User) error
 	FindByEmail(email string) (*domain.User, error)
+	Login(email string, password string) (*domain.User, error)
 }
 
 type userRepository struct {
@@ -42,4 +45,14 @@ func (r *userRepository) FindByEmail(email string) (*domain.User, error) {
 		return nil, err
 	}
 	return &user, nil
+}
+
+func (r *userRepository) Login(email string, password string) (*domain.User, error) {
+	usr, _ := r.FindByEmail(email)
+
+	if !utils.CheckPassword(usr.Password, password) {
+		return nil, errors.New("invalid password")
+	}
+
+	return usr, nil
 }

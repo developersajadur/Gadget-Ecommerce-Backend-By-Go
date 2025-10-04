@@ -15,6 +15,6 @@ func SetupRoutes() {
 	RegisterUserRoutes(Mux, db)
 
 	middleware.Cors(Mux)
-	return
+	
 
 }
