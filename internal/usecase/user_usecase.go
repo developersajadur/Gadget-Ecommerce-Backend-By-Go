@@ -1,15 +1,18 @@
 package usecase
 
 import (
+	"ecommerce/internal/config"
 	"ecommerce/internal/domain"
 	"ecommerce/internal/infra/repository"
 	"ecommerce/pkg/utils"
+	"ecommerce/pkg/utils/jwt"
 	"errors"
 	"fmt"
 )
 
 type UserUsecase interface {
 	Register(name, email, password string) (*domain.User, error)
+	Login(email, password string) (string, error)
 }
 
 type userUsecase struct {
@@ -46,4 +49,24 @@ func (uc *userUsecase) Register(name, email, password string) (*domain.User, err
 	}
 
 	return user, nil
+}
+
+func (uc *userUsecase) Login(email, password string) (string, error) {
+	usr, err := uc.userRepo.Login(email, password)
+	if err != nil {
+		return "", errors.New("user not found or invalid credentials")
+	}
+
+	payload := jwt.JwtCustomClaims{
+		UserId: usr.ID,
+		Email:  usr.Email,
+	}
+
+	// Generate token
+	token, err := jwt.GenerateJWT([]byte(config.ENV.JWTSecret), payload)
+	if err != nil {
+		return "", err
+	}
+
+	return token, nil
 }

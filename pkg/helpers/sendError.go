@@ -15,7 +15,6 @@ type Error struct {
 
 func SendError(w http.ResponseWriter, err interface{}, statusCode int, message string) {
 	w.Header().Set("Content-Type", "application/json")
-
 	response := Error{
 		Success:    false,
 		StatusCode: statusCode,
