@@ -3,18 +3,19 @@ package routes
 import (
 	"ecommerce/internal/infra/db"
 	"ecommerce/internal/infra/middleware"
-	"net/http"
+
+	"github.com/gorilla/mux"
 )
 
-var Mux *http.ServeMux
+var Router *mux.Router
 
-func SetupRoutes() {
-	db, _ := db.NewConnection()
-	Mux = http.NewServeMux()
+func SetupRoutes() *mux.Router {
+	dbConn, _ := db.NewConnection()
+	Router = mux.NewRouter()
 
-	RegisterUserRoutes(Mux, db)
+	Router.Use(middleware.Cors)
 
-	middleware.Cors(Mux)
-	
+	RegisterUserRoutes(Router, dbConn)
 
+	return Router
 }
