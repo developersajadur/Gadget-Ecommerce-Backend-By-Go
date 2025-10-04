@@ -9,10 +9,13 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
+// const userSelectColumns = "id, name, email, created_at, updated_at"
+
 type UserRepository interface {
 	Create(user *domain.User) error
 	FindByEmail(email string) (*domain.User, error)
 	Login(email string, password string) (*domain.User, error)
+	GetUserById(id string) (*domain.User, error)
 }
 
 type userRepository struct {
@@ -40,7 +43,8 @@ func (r *userRepository) Create(user *domain.User) error {
 // FindByEmail fetches a user by email
 func (r *userRepository) FindByEmail(email string) (*domain.User, error) {
 	var user domain.User
-	err := r.db.Get(&user, "SELECT * FROM users WHERE email=$1", email)
+	query := "SELECT * FROM users WHERE email=$1"
+	err := r.db.Get(&user, query, email)
 	if err != nil {
 		return nil, err
 	}
@@ -55,4 +59,15 @@ func (r *userRepository) Login(email string, password string) (*domain.User, err
 	}
 
 	return usr, nil
+}
+
+func (r *userRepository) GetUserById(id string) (*domain.User, error) {
+	var user domain.User
+	query := "SELECT * FROM users WHERE id=$1"
+
+	err := r.db.Get(&user, query, id)
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
 }

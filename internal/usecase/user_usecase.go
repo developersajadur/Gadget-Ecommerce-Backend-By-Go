@@ -13,6 +13,7 @@ import (
 type UserUsecase interface {
 	Register(name, email, password string) (*domain.User, error)
 	Login(email, password string) (string, error)
+	GetUserById(id string) (*domain.User, error)
 }
 
 type userUsecase struct {
@@ -69,4 +70,12 @@ func (uc *userUsecase) Login(email, password string) (string, error) {
 	}
 
 	return token, nil
+}
+
+func (uc *userUsecase) GetUserById(id string) (*domain.User, error) {
+	user, err := uc.userRepo.GetUserById(id)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
 }

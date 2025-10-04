@@ -3,8 +3,9 @@ package handlers
 import (
 	"ecommerce/internal/usecase"
 	"ecommerce/pkg/helpers"
-	"encoding/json"
 	"net/http"
+
+	"github.com/gorilla/mux"
 )
 
 type UserHandler struct {
@@ -23,10 +24,7 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 		Password string `json:"password"`
 	}
 
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		helpers.SendError(w, err, http.StatusBadRequest, "Can't decode user from body")
-		return
-	}
+	helpers.BodyDecoder(w, r, &req)
 
 	user, err := h.userUC.Register(req.Name, req.Email, req.Password)
 	if err != nil {
@@ -44,10 +42,7 @@ func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 		Password string `json:"password"`
 	}
 
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		helpers.SendError(w, err, http.StatusBadRequest, "Can't decode user from body")
-		return
-	}
+	helpers.BodyDecoder(w, r, &req)
 
 	token, err := h.userUC.Login(req.Email, req.Password)
 	if err != nil {
@@ -58,3 +53,15 @@ func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 	helpers.SendResponse(w, map[string]string{"token": token}, http.StatusOK, "Login successful")
 }
 
+func (h *UserHandler) GetUserById(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	user, err := h.userUC.GetUserById(id)
+	if err != nil {
+		helpers.SendError(w, err, http.StatusNotFound, "User not found")
+		return
+	}
+
+	helpers.SendResponse(w, user, http.StatusOK, "User fetched successfully")
+}

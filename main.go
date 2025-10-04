@@ -23,10 +23,10 @@ func init() {
 
 func runServer() {
 
-	routes.SetupRoutes()
+	router := routes.SetupRoutes()
 
 	fmt.Println("Starting Server At:", config.ENV.Port)
-	if err := http.ListenAndServe(":"+config.ENV.Port, routes.Mux); err != nil {
+	if err := http.ListenAndServe(":"+config.ENV.Port, router); err != nil {
 		fmt.Println("Error starting server:", err)
 	}
 }
