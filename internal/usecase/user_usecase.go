@@ -33,7 +33,7 @@ func (uc *userUsecase) Register(name, email, password string) (*domain.User, err
 		Password: password,
 	}
 
-		hashedPassword, err := utils.HashPassword(user.Password)
+	hashedPassword, err := utils.HashPassword(user.Password)
 	if err != nil {
 		return user, err
 	}

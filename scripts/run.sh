@@ -7,4 +7,4 @@ if [ -f .env ]; then
 fi
 
 # echo "🚀 Starting server on port $PORT"
-go run ./cmd/server/main.go
+go run ./main.go
