@@ -3,7 +3,7 @@ package main
 import (
 	"ecommerce/internal/config"
 	"ecommerce/internal/delivery/http/routes"
-	"ecommerce/internal/infra/db"
+	migrateDb "ecommerce/internal/infra/db"
 	"fmt"
 	"net/http"
 	"os"
@@ -11,12 +11,13 @@ import (
 
 func init() {
 	config.Init()
-	_, err := db.NewConnection()
+	db, err := migrateDb.NewConnection()
 	if err != nil {
 		fmt.Println("Database connection failed:", err)
 		os.Exit(1)
 	}
 	fmt.Println("Database connected successfully")
+	migrateDb.RunMigrations(db)
 
 }
 
