@@ -41,7 +41,8 @@ func (h *UserHandler) List(w http.ResponseWriter, r *http.Request) {
 		helpers.SendError(w, err, http.StatusInternalServerError, "Failed to fetch users")
 		return
 	}
-	helpers.SendResponse(w, users, http.StatusOK, "Users fetched successfully")
+		helpers.SendResponse(w, users, http.StatusOK, "Login successful")
+
 
 }
 
