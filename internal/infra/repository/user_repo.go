@@ -13,6 +13,7 @@ import (
 
 type UserRepository interface {
 	Create(user *domain.User) error
+	List() ([]*domain.User, error)
 	FindByEmail(email string) (*domain.User, error)
 	Login(email string, password string) (*domain.User, error)
 	GetUserById(id string) (*domain.User, error)
@@ -38,6 +39,22 @@ func (r *userRepository) Create(user *domain.User) error {
 	user.UpdatedAt = now
 
 	return r.db.QueryRowx(query, user.Name, user.Email, user.Password, user.CreatedAt, user.UpdatedAt).Scan(&user.ID)
+}
+
+func (r *userRepository) List() ([]*domain.User, error) {
+	var users []domain.User
+
+	query := "SELECT * FROM users"
+	err := r.db.Select(&users, query)
+	if err != nil {
+		return nil, err
+	}
+	userPtrs := make([]*domain.User, len(users))
+	for i := range users {
+		userPtrs[i] = &users[i]
+	}
+
+	return userPtrs, nil
 }
 
 // FindByEmail fetches a user by email

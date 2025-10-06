@@ -12,6 +12,7 @@ import (
 
 type UserUsecase interface {
 	Register(name, email, password string) (*domain.User, error)
+	List() ([]*domain.User, error)
 	Login(email, password string) (string, error)
 	GetUserById(id string) (*domain.User, error)
 }
@@ -50,6 +51,14 @@ func (uc *userUsecase) Register(name, email, password string) (*domain.User, err
 	}
 
 	return user, nil
+}
+
+func (uc *userUsecase) List() ([]*domain.User, error) {
+	users, err := uc.userRepo.List()
+	if err != nil {
+		return nil, errors.New("Internal error")
+	}
+	return users, nil
 }
 
 func (uc *userUsecase) Login(email, password string) (string, error) {

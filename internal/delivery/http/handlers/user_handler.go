@@ -35,6 +35,16 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 	helpers.SendResponse(w, user, http.StatusOK, "User created successfully")
 }
 
+func (h *UserHandler) List(w http.ResponseWriter, r *http.Request) {
+	users, err := h.userUC.List()
+	if err != nil {
+		helpers.SendError(w, err, http.StatusInternalServerError, "Failed to fetch users")
+		return
+	}
+	helpers.SendResponse(w, users, http.StatusOK, "Users fetched successfully")
+
+}
+
 // Login
 func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var req struct {

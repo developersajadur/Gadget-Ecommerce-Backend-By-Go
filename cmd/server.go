@@ -12,7 +12,7 @@ func RunServer() {
 	routes.SetupRoutes()
 
 	fmt.Println("Starting Server At:", config.ENV.Port)
-	if err := http.ListenAndServe(":"+config.ENV.Port, routes.Mux); err != nil {
+	if err := http.ListenAndServe(":"+config.ENV.Port, routes.Router); err != nil {
 		fmt.Println("Error starting server:", err)
 	}
 }
