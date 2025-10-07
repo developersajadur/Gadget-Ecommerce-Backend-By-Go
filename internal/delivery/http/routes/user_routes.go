@@ -23,8 +23,18 @@ func RegisterUserRoutes(r *mux.Router, db *sqlx.DB) {
 		middleware.Auth(uc, []string{domain.Role.Admin}),
 	)).Methods("GET")
 
+	r.Handle("/users/list/{id}", middleware.Middlewares(
+		http.HandlerFunc(userHandler.GetUserById),
+		middleware.Auth(uc, []string{domain.Role.Admin}),
+	)).Methods("GET")
+
+	r.Handle("/users/get-my-user-details", middleware.Middlewares(
+		http.HandlerFunc(userHandler.GetMyUserDetails),
+		middleware.Auth(uc, []string{domain.Role.Admin, domain.Role.User}),
+	)).Methods("GET")
+
 	// Public routes
 	r.HandleFunc("/users/create", userHandler.Create).Methods("POST")
 	r.HandleFunc("/users/login", userHandler.Login).Methods("POST")
-	r.HandleFunc("/users/{id}", userHandler.GetUserById).Methods("GET")
+
 }

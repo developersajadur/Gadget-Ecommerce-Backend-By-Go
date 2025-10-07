@@ -3,6 +3,7 @@ package handlers
 import (
 	"ecommerce/internal/usecase"
 	"ecommerce/pkg/helpers"
+	"ecommerce/pkg/utils/jwt"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -74,6 +75,23 @@ func (h *UserHandler) GetUserById(w http.ResponseWriter, r *http.Request) {
 	id := vars["id"]
 
 	user, err := h.userUC.GetUserById(id)
+	if err != nil {
+		helpers.SendError(w, err, http.StatusNotFound, "User not found")
+		return
+	}
+
+	helpers.SendResponse(w, user, http.StatusOK, "User fetched successfully")
+}
+
+func (h *UserHandler) GetMyUserDetails(w http.ResponseWriter, r *http.Request) {
+
+	jwtUser, err := jwt.GetUserFromJwt(r)
+	if err != nil {
+		helpers.SendError(w, err, http.StatusUnauthorized, "Invalid token")
+		return
+	}
+
+	user, err := h.userUC.GetUserById(jwtUser.UserID)
 	if err != nil {
 		helpers.SendError(w, err, http.StatusNotFound, "User not found")
 		return
