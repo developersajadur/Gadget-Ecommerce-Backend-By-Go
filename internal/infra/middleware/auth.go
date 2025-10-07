@@ -7,6 +7,7 @@ import (
 	"ecommerce/pkg/utils/jwt"
 	"errors"
 	"net/http"
+	"time"
 )
 
 type contextKey string
@@ -26,6 +27,11 @@ func Auth(userUC usecase.UserUsecase, roles []string) func(http.Handler) http.Ha
 			jwtUser, err := jwt.GetUserFromJwt(r)
 			if err != nil {
 				helpers.SendError(w, err, http.StatusUnauthorized, "Invalid token")
+				return
+			}
+
+			if time.Now().Unix() > jwtUser.Exp {
+				helpers.SendError(w, errors.New("token expired"), http.StatusUnauthorized, "Token has expired")
 				return
 			}
 
