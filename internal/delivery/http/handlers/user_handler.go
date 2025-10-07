@@ -28,7 +28,11 @@ func (h *UserHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.userUC.Create(req.Name, req.Email, req.Password)
 	if err != nil {
-		helpers.SendError(w, err, http.StatusConflict, "User already exists with this email")
+		if err.Error() == "user already exists" {
+			helpers.SendError(w, err, http.StatusConflict, "User already exists with this email")
+			return
+		}
+		helpers.SendError(w, err, http.StatusInternalServerError, "Failed to create user")
 		return
 	}
 

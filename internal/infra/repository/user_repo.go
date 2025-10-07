@@ -29,16 +29,19 @@ func NewUserRepository(db *sqlx.DB) UserRepository {
 // Create inserts a new user and returns the inserted ID
 func (r *userRepository) Create(user *domain.User) error {
 	query := `
-		INSERT INTO users (name, email, password, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5)
+		INSERT INTO users (name, email, password, role, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING id
 	`
+
 	now := time.Now()
 	user.CreatedAt = now
 	user.UpdatedAt = now
 
-	return r.db.QueryRowx(query, user.Name, user.Email, user.Password, user.CreatedAt, user.UpdatedAt).Scan(&user.ID)
+	// Pass all 6 values including role
+	return r.db.QueryRowx(query, user.Name, user.Email, user.Password, user.Role, user.CreatedAt, user.UpdatedAt).Scan(&user.ID)
 }
+
 
 func (r *userRepository) List(page, limit string) ([]*domain.User, error) {
 	const (
