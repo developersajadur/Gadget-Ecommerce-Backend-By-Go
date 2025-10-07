@@ -39,13 +39,13 @@ func (uc *userUsecase) Create(name, email, password string) (*domain.User, error
 		Name:     name,
 		Email:    email,
 		Password: password,
+		Role:     domain.RoleUser,
 	}
 
 	hashedPassword, err := utils.HashPassword(user.Password)
 	if err != nil {
 		return nil, err
 	}
-
 	user.Password = hashedPassword
 
 	err = uc.userRepo.Create(user)
@@ -55,7 +55,6 @@ func (uc *userUsecase) Create(name, email, password string) (*domain.User, error
 
 	return user, nil
 }
-
 
 func (uc *userUsecase) List(page string, limit string) ([]*domain.User, error) {
 	users, err := uc.userRepo.List(page, limit)
@@ -86,6 +85,7 @@ func (uc *userUsecase) Login(email, password string) (string, error) {
 	payload := jwt.JwtCustomClaims{
 		UserId: usr.ID,
 		Email:  usr.Email,
+		Role: usr.Role,
 	}
 
 	token, err := jwt.GenerateJWT([]byte(config.ENV.JWTSecret), payload)

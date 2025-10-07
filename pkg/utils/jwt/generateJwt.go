@@ -9,6 +9,7 @@ import (
 type JwtCustomClaims struct {
 	UserId string    `json:"userId"`
 	Email  string `json:"email"`
+	Role string `json:"role"`
 
 }
 
@@ -16,6 +17,7 @@ func GenerateJWT(secret []byte, payload JwtCustomClaims) (string, error) {
 	claims := jwt.MapClaims{
 		"userId": payload.UserId,
 		"email":  payload.Email,
+		"role": payload.Role,
 		"exp":    time.Now().Add(time.Hour * 72).Unix(),
 	}
 

@@ -2,6 +2,7 @@ package routes
 
 import (
 	"ecommerce/internal/delivery/http/handlers"
+	"ecommerce/internal/domain"
 	"ecommerce/internal/infra/middleware"
 	"ecommerce/internal/infra/repository"
 	"ecommerce/internal/usecase"
@@ -16,13 +17,14 @@ func RegisterUserRoutes(r *mux.Router, db *sqlx.DB) {
 	uc := usecase.NewUserUsecase(repo)
 	userHandler := handlers.NewUserHandler(uc)
 
-	r.HandleFunc("/users/create", userHandler.Create).Methods("POST")
-
+	// Protected routes (role-based)
 	r.Handle("/users/list", middleware.Middlewares(
 		http.HandlerFunc(userHandler.List),
-		middleware.Auth(uc),
+		middleware.Auth(uc, []string{domain.Role.Admin}),
 	)).Methods("GET")
 
+	// Public routes
+	r.HandleFunc("/users/create", userHandler.Create).Methods("POST")
 	r.HandleFunc("/users/login", userHandler.Login).Methods("POST")
 	r.HandleFunc("/users/{id}", userHandler.GetUserById).Methods("GET")
 }
