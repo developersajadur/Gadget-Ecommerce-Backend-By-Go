@@ -1,17 +1,17 @@
 package usecase
 
 import (
+	"database/sql"
 	"ecommerce/internal/config"
 	"ecommerce/internal/domain"
 	"ecommerce/internal/infra/repository"
 	"ecommerce/pkg/utils"
 	"ecommerce/pkg/utils/jwt"
 	"errors"
-	"fmt"
 )
 
 type UserUsecase interface {
-	Register(name, email, password string) (*domain.User, error)
+	Create(name, email, password string) (*domain.User, error)
 	List(page string, limit string) ([]*domain.User, error)
 	Login(email, password string) (string, error)
 	GetUserById(id string) (*domain.User, error)
@@ -25,11 +25,14 @@ func NewUserUsecase(repo repository.UserRepository) UserUsecase {
 	return &userUsecase{repo}
 }
 
-func (uc *userUsecase) Register(name, email, password string) (*domain.User, error) {
-	existing, _ := uc.userRepo.FindByEmail(email)
-	if existing != nil {
-		fmt.Println(existing)
+func (uc *userUsecase) Create(name, email, password string) (*domain.User, error) {
+	existing, err := uc.userRepo.FindByEmail(email)
+	if err == nil && existing != nil {
 		return nil, errors.New("user already exists")
+	}
+
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return nil, err
 	}
 
 	user := &domain.User{
@@ -40,7 +43,7 @@ func (uc *userUsecase) Register(name, email, password string) (*domain.User, err
 
 	hashedPassword, err := utils.HashPassword(user.Password)
 	if err != nil {
-		return user, err
+		return nil, err
 	}
 
 	user.Password = hashedPassword
@@ -52,6 +55,7 @@ func (uc *userUsecase) Register(name, email, password string) (*domain.User, err
 
 	return user, nil
 }
+
 
 func (uc *userUsecase) List(page string, limit string) ([]*domain.User, error) {
 	users, err := uc.userRepo.List(page, limit)

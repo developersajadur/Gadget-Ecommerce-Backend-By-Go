@@ -2,8 +2,13 @@ package middleware
 
 // import (
 // 	"context"
+// 	"ecommerce/internal/domain"
+// 	"ecommerce/internal/infra/repository"
 // 	"ecommerce/pkg/helpers"
+// 	"ecommerce/pkg/utils"
+// 	"ecommerce/pkg/utils/jwt"
 // 	"net/http"
+// 	"strconv"
 // )
 
 // type contextKey string
@@ -19,7 +24,7 @@ package middleware
 // 			return
 // 		}
 
-// 		claims, err := utils.GetUserFromJwt(token)
+// 		claims, err := jwt.GetUserFromJwt(token)
 // 		if err != nil {
 // 			helpers.SendError(w, err.Error(), http.StatusUnauthorized, "Invalid token")
 // 			return
@@ -30,14 +35,12 @@ package middleware
 // 			helpers.SendError(w, nil, http.StatusUnauthorized, "Unauthorized")
 // 			return
 // 		}
-
-// 		var user *database.Person
-// 		for _, p := range database.People {
-// 			if p.ID == int(userID) {
-// 				user = &p
-// 				break
-// 			}
+// 		if err != nil {
+// 			helpers.SendError(w, err.Error(), http.StatusUnauthorized, "User not found")
+// 			return
 // 		}
+
+
 
 // 		if user == nil {
 // 			helpers.SendError(w, nil, http.StatusUnauthorized, "User not found")
