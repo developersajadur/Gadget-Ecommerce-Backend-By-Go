@@ -91,11 +91,11 @@ func (r *userRepository) FindByEmail(email string) (*domain.User, error) {
 
 func (r *userRepository) Login(email string, password string) (*domain.User, error) {
 	usr, err := r.FindByEmail(email)
-	if !utils.CheckPassword(usr.Password, password) {
-		return nil, errors.New("invalid password")
-	}
 	if err != nil {
 		return nil, err
+	}
+	if !utils.CheckPassword(usr.Password, password) {
+		return nil, errors.New("invalid password")
 	}
 	return usr, nil
 }
