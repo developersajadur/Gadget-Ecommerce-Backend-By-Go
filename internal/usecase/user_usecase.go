@@ -15,6 +15,7 @@ type UserUsecase interface {
 	List(page string, limit string) ([]*domain.User, error)
 	Login(email, password string) (string, error)
 	GetUserById(id string) (*domain.User, error)
+	GetMyUserDetails(id string) (*domain.User, error)
 }
 
 type userUsecase struct {
@@ -85,7 +86,7 @@ func (uc *userUsecase) Login(email, password string) (string, error) {
 	payload := jwt.JwtCustomClaims{
 		UserId: usr.ID,
 		Email:  usr.Email,
-		Role: usr.Role,
+		Role:   usr.Role,
 	}
 
 	token, err := jwt.GenerateJWT([]byte(config.ENV.JWTSecret), payload)
@@ -97,7 +98,17 @@ func (uc *userUsecase) Login(email, password string) (string, error) {
 }
 
 func (uc *userUsecase) GetUserById(id string) (*domain.User, error) {
+
 	user, err := uc.userRepo.GetUserById(id)
+	
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
+func (uc *userUsecase) GetMyUserDetails(id string) (*domain.User, error) {
+	user, err := uc.userRepo.GetMyUserDetails(id)
 	if err != nil {
 		return nil, err
 	}

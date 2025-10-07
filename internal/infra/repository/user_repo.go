@@ -16,6 +16,7 @@ type UserRepository interface {
 	FindByEmail(email string) (*domain.User, error)
 	Login(email string, password string) (*domain.User, error)
 	GetUserById(id string) (*domain.User, error)
+	GetMyUserDetails(id string) (*domain.User, error)
 }
 
 type userRepository struct {
@@ -41,7 +42,6 @@ func (r *userRepository) Create(user *domain.User) error {
 	// Pass all 6 values including role
 	return r.db.QueryRowx(query, user.Name, user.Email, user.Password, user.Role, user.CreatedAt, user.UpdatedAt).Scan(&user.ID)
 }
-
 
 func (r *userRepository) List(page, limit string) ([]*domain.User, error) {
 	const (
@@ -104,6 +104,19 @@ func (r *userRepository) Login(email string, password string) (*domain.User, err
 }
 
 func (r *userRepository) GetUserById(id string) (*domain.User, error) {
+	var user domain.User
+	query := "SELECT * FROM users WHERE is_deleted = false AND id = $1"
+	err := r.db.Get(&user, query, id)
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+
+
+func (r *userRepository) GetMyUserDetails(id string) (*domain.User, error) {
+	
 	var user domain.User
 	query := "SELECT * FROM users WHERE is_deleted = false AND id = $1"
 
