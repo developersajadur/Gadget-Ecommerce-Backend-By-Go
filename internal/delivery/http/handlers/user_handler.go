@@ -16,8 +16,8 @@ func NewUserHandler(uc usecase.UserUsecase) *UserHandler {
 	return &UserHandler{uc}
 }
 
-// Register
-func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
+// Create
+func (h *UserHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Name     string `json:"name"`
 		Email    string `json:"email"`
@@ -26,7 +26,7 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	helpers.BodyDecoder(w, r, &req)
 
-	user, err := h.userUC.Register(req.Name, req.Email, req.Password)
+	user, err := h.userUC.Create(req.Name, req.Email, req.Password)
 	if err != nil {
 		helpers.SendError(w, err, http.StatusConflict, "User already exists with this email")
 		return
@@ -36,13 +36,14 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *UserHandler) List(w http.ResponseWriter, r *http.Request) {
-	users, err := h.userUC.List()
+	page := r.URL.Query().Get("page")
+	limit := r.URL.Query().Get("limit")
+	users, err := h.userUC.List(page, limit)
 	if err != nil {
 		helpers.SendError(w, err, http.StatusInternalServerError, "Failed to fetch users")
 		return
 	}
-		helpers.SendResponse(w, users, http.StatusOK, "Login successful")
-
+	helpers.SendResponse(w, users, http.StatusOK, "Login successful")
 
 }
 
