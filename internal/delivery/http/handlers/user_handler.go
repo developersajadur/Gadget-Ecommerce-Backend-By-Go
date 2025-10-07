@@ -36,7 +36,9 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *UserHandler) List(w http.ResponseWriter, r *http.Request) {
-	users, err := h.userUC.List()
+	page := r.URL.Query().Get("page")
+	limit := r.URL.Query().Get("limit")
+	users, err := h.userUC.List(page, limit)
 	if err != nil {
 		helpers.SendError(w, err, http.StatusInternalServerError, "Failed to fetch users")
 		return

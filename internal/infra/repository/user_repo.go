@@ -4,16 +4,15 @@ import (
 	"ecommerce/internal/domain"
 	"ecommerce/pkg/utils"
 	"errors"
+	"strconv"
 	"time"
 
 	"github.com/jmoiron/sqlx"
 )
 
-// const userSelectColumns = "id, name, email, created_at, updated_at"
-
 type UserRepository interface {
 	Create(user *domain.User) error
-	List() ([]*domain.User, error)
+	List(page string, limit string) ([]*domain.User, error)
 	FindByEmail(email string) (*domain.User, error)
 	Login(email string, password string) (*domain.User, error)
 	GetUserById(id string) (*domain.User, error)
@@ -41,14 +40,36 @@ func (r *userRepository) Create(user *domain.User) error {
 	return r.db.QueryRowx(query, user.Name, user.Email, user.Password, user.CreatedAt, user.UpdatedAt).Scan(&user.ID)
 }
 
-func (r *userRepository) List() ([]*domain.User, error) {
-	var users []domain.User
+func (r *userRepository) List(page, limit string) ([]*domain.User, error) {
+	const (
+		defaultPage  = 1
+		defaultLimit = 20
+	)
 
-	query := "SELECT * FROM users"
-	err := r.db.Select(&users, query)
-	if err != nil {
+	toInt := func(s string, def int) int {
+		v, err := strconv.Atoi(s)
+		if err != nil || v < 1 {
+			return def
+		}
+		return v
+	}
+
+	pageInt := toInt(page, defaultPage)
+	limitInt := toInt(limit, defaultLimit)
+	offset := (pageInt - 1) * limitInt
+
+	query := `
+		SELECT *
+		FROM users
+		ORDER BY created_at DESC
+		LIMIT $1 OFFSET $2
+	`
+
+	var users []domain.User
+	if err := r.db.Select(&users, query, limitInt, offset); err != nil {
 		return nil, err
 	}
+
 	userPtrs := make([]*domain.User, len(users))
 	for i := range users {
 		userPtrs[i] = &users[i]
@@ -60,7 +81,7 @@ func (r *userRepository) List() ([]*domain.User, error) {
 // FindByEmail fetches a user by email
 func (r *userRepository) FindByEmail(email string) (*domain.User, error) {
 	var user domain.User
-	query := "SELECT * FROM users WHERE email=$1"
+	query := "SELECT * FROM users WHERE email = $1"
 	err := r.db.Get(&user, query, email)
 	if err != nil {
 		return nil, err
@@ -69,18 +90,19 @@ func (r *userRepository) FindByEmail(email string) (*domain.User, error) {
 }
 
 func (r *userRepository) Login(email string, password string) (*domain.User, error) {
-	usr, _ := r.FindByEmail(email)
-
+	usr, err := r.FindByEmail(email)
 	if !utils.CheckPassword(usr.Password, password) {
 		return nil, errors.New("invalid password")
 	}
-
+	if err != nil {
+		return nil, err
+	}
 	return usr, nil
 }
 
 func (r *userRepository) GetUserById(id string) (*domain.User, error) {
 	var user domain.User
-	query := "SELECT * FROM users WHERE id=$1"
+	query := "SELECT * FROM users WHERE is_deleted = false AND id = $1"
 
 	err := r.db.Get(&user, query, id)
 	if err != nil {
