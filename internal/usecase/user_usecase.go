@@ -6,8 +6,11 @@ import (
 	"ecommerce/internal/domain"
 	"ecommerce/internal/infra/repository"
 	"ecommerce/pkg/utils"
+	"ecommerce/pkg/utils/email"
 	"ecommerce/pkg/utils/jwt"
 	"errors"
+	"fmt"
+	"time"
 )
 
 type UserUsecase interface {
@@ -22,27 +25,34 @@ type UserUsecase interface {
 
 type userUsecase struct {
 	userRepo repository.UserRepository
+	otpUC    OtpUsecase
 }
 
-func NewUserUsecase(repo repository.UserRepository) UserUsecase {
-	return &userUsecase{repo}
+func NewUserUsecase(userRepo repository.UserRepository, otpUC OtpUsecase) UserUsecase {
+	return &userUsecase{
+		userRepo: userRepo,
+		otpUC:    otpUC,
+	}
 }
 
-func (uc *userUsecase) Create(name, email, password string) (*domain.User, error) {
-	existing, err := uc.userRepo.FindByEmail(email)
+
+
+func (uc *userUsecase) Create(name, emailAddr, password string) (*domain.User, error) {
+	existing, err := uc.userRepo.FindByEmail(emailAddr)
 	if err == nil && existing != nil {
 		return nil, errors.New("user already exists")
 	}
-
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, err
 	}
 
 	user := &domain.User{
-		Name:     name,
-		Email:    email,
-		Password: password,
-		Role:     domain.RoleUser,
+		Name:      name,
+		Email:     emailAddr,
+		Password:  password,
+		Role:      domain.RoleUser,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 
 	hashedPassword, err := utils.HashPassword(user.Password)
@@ -51,9 +61,26 @@ func (uc *userUsecase) Create(name, email, password string) (*domain.User, error
 	}
 	user.Password = hashedPassword
 
-	err = uc.userRepo.Create(user)
-	if err != nil {
+	if err := uc.userRepo.Create(user); err != nil {
 		return nil, err
+	}
+
+	// Create OTP
+	if user.ID != "" {
+		otpData, err := uc.otpUC.Create(user.ID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create OTP: %w", err)
+		}
+
+		// Send OTP email
+		emailData := map[string]string{
+			"Name": user.Name,
+			"OTP":  otpData.Code,
+		}
+		if err := email.SendEmail(user.Email, "Verify Your Account", "templates/otp.html", emailData); err != nil {
+			fmt.Println(err)
+			return nil, fmt.Errorf("failed to send OTP email: %w", err)
+		}
 	}
 
 	return user, nil
@@ -152,4 +179,3 @@ func (uc *userUsecase) UnblockUserByAdmin(id string) error {
 	}
 	return nil
 }
-

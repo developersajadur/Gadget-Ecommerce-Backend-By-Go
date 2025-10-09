@@ -15,6 +15,10 @@ type config struct {
 	Db_Name      string
 	Db_Host      string
 	Db_Port      string
+	Email_Host string
+	Email_Port string
+	Email_App_Password string
+	Email string
 	// DBUrl     string
 	// Env       string
 }
@@ -48,5 +52,9 @@ func Init() {
 		Db_Name:      getEnv("DB_NAME"),
 		Db_Host:      getEnv("DB_HOST"),
 		Db_Port:      getEnv("DB_PORT"),
+		Email_Host: getEnv("EMAIL_HOST"),
+		Email_Port: getEnv("EMAIL_PORT"),
+		Email_App_Password: getEnv("EMAIL_APP_PASSWORD"),
+		Email: getEnv("EMAIL"),
 	}
 }

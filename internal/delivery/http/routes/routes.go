@@ -17,6 +17,7 @@ func SetupRoutes() *mux.Router {
 	Router.Use(middleware.Cors)
 
 	RegisterUserRoutes(api_version_1, dbConn)
+	RegisterOtpRoutes(api_version_1, dbConn)
 
 	return Router
 }

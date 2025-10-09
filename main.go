@@ -4,12 +4,14 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"ecommerce/internal/config"
 	"ecommerce/internal/delivery/http/routes"
 	migrateDb "ecommerce/internal/infra/db"
 	"ecommerce/internal/infra/middleware"
+	"ecommerce/pkg/utils/email"
 )
 
 func init() {
@@ -26,9 +28,25 @@ func init() {
 }
 
 func runServer() {
+	// Initialize email
+	port, err := strconv.Atoi(config.ENV.Email_Port)
+	if err != nil {
+		fmt.Println("Invalid email port:", err)
+		os.Exit(1)
+	}
+
+	email.Init(email.SMTPConfig{
+		Host:     config.ENV.Email_Host,
+		Port:     port,
+		Username: config.ENV.Email,
+		Password: config.ENV.Email_App_Password,
+		From:     config.ENV.Email,
+	})
+
+	// Setup routes
 	router := routes.SetupRoutes()
 
-	// Rate limiter: 4 requests per 1 seconds
+	// Rate limiter: 4 requests per second globally
 	rateLimiter := middleware.NewRateLimiterMiddleware(middleware.RateLimiterConfig{
 		Limit:  4,
 		Period: 1 * time.Second,

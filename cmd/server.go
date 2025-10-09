@@ -8,7 +8,6 @@ import (
 )
 
 func RunServer() {
-
 	routes.SetupRoutes()
 
 	fmt.Println("Starting Server At:", config.ENV.Port)
