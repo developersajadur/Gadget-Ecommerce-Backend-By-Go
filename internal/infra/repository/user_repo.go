@@ -19,7 +19,7 @@ type UserRepository interface {
 	GetUserById(id string) (*domain.User, error)
 	GetMyUserDetails(id string) (*domain.User, error)
 	BlockUserByAdmin(id string) error
-	// UnblockUserByAdmin(id string) error
+	UnblockUserByAdmin(id string) error
 }
 
 type userRepository struct {
@@ -30,7 +30,6 @@ func NewUserRepository(db *sqlx.DB) UserRepository {
 	return &userRepository{db: db}
 }
 
-// Create inserts a new user and returns the inserted ID
 func (r *userRepository) Create(user *domain.User) error {
 	query := `
 		INSERT INTO users (name, email, password, role, created_at, updated_at)
@@ -97,7 +96,7 @@ func (r *userRepository) List(page, limit, search string) ([]*domain.User, error
 	return userPtrs, nil
 }
 
-// FindByEmail fetches a user by email
+
 func (r *userRepository) FindByEmail(email string) (*domain.User, error) {
 	var user domain.User
 	query := "SELECT * FROM users WHERE email = $1"
@@ -147,3 +146,11 @@ func (r *userRepository) BlockUserByAdmin(id string) error {
 	_, err := r.db.Exec(query, now, id)
 	return err
 }
+
+func (r *userRepository) UnblockUserByAdmin(id string) error {
+	now := time.Now()
+	query := "UPDATE users SET is_blocked = false, updated_at = $1 WHERE id = $2"
+	_, err := r.db.Exec(query, now, id)
+	return err
+}
+

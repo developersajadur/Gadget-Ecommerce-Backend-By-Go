@@ -119,3 +119,24 @@ func (h *UserHandler) BlockUserByAdmin(w http.ResponseWriter, r *http.Request) {
 
 	helpers.SendResponse(w, nil, http.StatusOK, "User blocked successfully")
 }
+
+
+func (h *UserHandler) UnblockUserByAdmin(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	err := h.userUC.UnblockUserByAdmin(id)
+	if err != nil {
+		switch err.Error() {
+		case "user not found":
+			helpers.SendError(w, err, http.StatusNotFound, err.Error())
+		case "user is already unblocked":
+			helpers.SendError(w, err, http.StatusBadRequest, err.Error())
+		default:
+			helpers.SendError(w, err, http.StatusInternalServerError, "Failed to unBlock user")
+		}
+		return
+	}
+
+	helpers.SendResponse(w, nil, http.StatusOK, "User unblocked successfully")
+}

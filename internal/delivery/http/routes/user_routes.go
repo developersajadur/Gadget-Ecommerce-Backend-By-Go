@@ -38,6 +38,11 @@ func RegisterUserRoutes(r *mux.Router, db *sqlx.DB) {
 		middleware.Auth(uc, []string{domain.Role.Admin}),
 	)).Methods("POST")
 
+			r.Handle("/users/unblock-user/{id}", middleware.Middlewares(
+		http.HandlerFunc(userHandler.UnblockUserByAdmin),
+		middleware.Auth(uc, []string{domain.Role.Admin}),
+	)).Methods("POST")
+
 	// Public routes
 	r.HandleFunc("/users/create", userHandler.Create).Methods("POST")
 	r.HandleFunc("/users/login", userHandler.Login).Methods("POST")
