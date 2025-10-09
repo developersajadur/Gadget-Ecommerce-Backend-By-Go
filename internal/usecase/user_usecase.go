@@ -16,6 +16,7 @@ type UserUsecase interface {
 	Login(email, password string) (string, error)
 	GetUserById(id string) (*domain.User, error)
 	GetMyUserDetails(id string) (*domain.User, error)
+	BlockUserByAdmin(id string) error
 }
 
 type userUsecase struct {
@@ -113,4 +114,23 @@ func (uc *userUsecase) GetMyUserDetails(id string) (*domain.User, error) {
 		return nil, err
 	}
 	return user, nil
+}
+
+
+func (uc *userUsecase) BlockUserByAdmin(id string) error {
+	isExistingUser, err := uc.userRepo.GetUserById(id)
+	if err != nil {
+		return err
+	}
+	if isExistingUser == nil {
+		return errors.New("user not found")
+	}
+	if isExistingUser.IsBlocked {
+		return errors.New("user is already blocked")
+	}
+	err = uc.userRepo.BlockUserByAdmin(id)
+	if err != nil {
+		return err
+	}
+	return nil
 }

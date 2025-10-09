@@ -12,10 +12,11 @@ var Router *mux.Router
 func SetupRoutes() *mux.Router {
 	dbConn, _ := db.NewConnection()
 	Router = mux.NewRouter()
+	api_version_1 := Router.PathPrefix("/api/v1").Subrouter()
 
 	Router.Use(middleware.Cors)
 
-	RegisterUserRoutes(Router, dbConn)
+	RegisterUserRoutes(api_version_1, dbConn)
 
 	return Router
 }

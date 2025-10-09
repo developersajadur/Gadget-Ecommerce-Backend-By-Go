@@ -17,6 +17,8 @@ type UserRepository interface {
 	Login(email string, password string) (*domain.User, error)
 	GetUserById(id string) (*domain.User, error)
 	GetMyUserDetails(id string) (*domain.User, error)
+	BlockUserByAdmin(id string) error
+	// UnblockUserByAdmin(id string) error
 }
 
 type userRepository struct {
@@ -125,4 +127,12 @@ func (r *userRepository) GetMyUserDetails(id string) (*domain.User, error) {
 		return nil, err
 	}
 	return &user, nil
+}
+
+
+func (r *userRepository) BlockUserByAdmin(id string) error {
+	now := time.Now()
+	query := "UPDATE users SET is_blocked = true, updated_at = $1 WHERE id = $2"
+	_, err := r.db.Exec(query, now, id)
+	return err
 }
