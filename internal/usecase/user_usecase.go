@@ -12,7 +12,7 @@ import (
 
 type UserUsecase interface {
 	Create(name, email, password string) (*domain.User, error)
-	List(page string, limit string) ([]*domain.User, error)
+	List(page string, limit string, search string) ([]*domain.User, error)
 	Login(email, password string) (string, error)
 	GetUserById(id string) (*domain.User, error)
 	GetMyUserDetails(id string) (*domain.User, error)
@@ -58,8 +58,8 @@ func (uc *userUsecase) Create(name, email, password string) (*domain.User, error
 	return user, nil
 }
 
-func (uc *userUsecase) List(page string, limit string) ([]*domain.User, error) {
-	users, err := uc.userRepo.List(page, limit)
+func (uc *userUsecase) List(page string, limit string, search string) ([]*domain.User, error) {
+	users, err := uc.userRepo.List(page, limit, search)
 	if err != nil {
 		return nil, errors.New("internal error")
 	}
@@ -101,7 +101,7 @@ func (uc *userUsecase) Login(email, password string) (string, error) {
 func (uc *userUsecase) GetUserById(id string) (*domain.User, error) {
 
 	user, err := uc.userRepo.GetUserById(id)
-	
+
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +115,6 @@ func (uc *userUsecase) GetMyUserDetails(id string) (*domain.User, error) {
 	}
 	return user, nil
 }
-
 
 func (uc *userUsecase) BlockUserByAdmin(id string) error {
 	isExistingUser, err := uc.userRepo.GetUserById(id)

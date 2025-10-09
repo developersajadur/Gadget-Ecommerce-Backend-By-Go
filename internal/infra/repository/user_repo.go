@@ -4,6 +4,7 @@ import (
 	"ecommerce/internal/domain"
 	"ecommerce/pkg/utils"
 	"errors"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -12,7 +13,7 @@ import (
 
 type UserRepository interface {
 	Create(user *domain.User) error
-	List(page string, limit string) ([]*domain.User, error)
+	List(page string, limit string, search string) ([]*domain.User, error)
 	FindByEmail(email string) (*domain.User, error)
 	Login(email string, password string) (*domain.User, error)
 	GetUserById(id string) (*domain.User, error)
@@ -45,7 +46,7 @@ func (r *userRepository) Create(user *domain.User) error {
 	return r.db.QueryRowx(query, user.Name, user.Email, user.Password, user.Role, user.CreatedAt, user.UpdatedAt).Scan(&user.ID)
 }
 
-func (r *userRepository) List(page, limit string) ([]*domain.User, error) {
+func (r *userRepository) List(page, limit, search string) ([]*domain.User, error) {
 	const (
 		defaultPage  = 1
 		defaultLimit = 20
@@ -63,15 +64,28 @@ func (r *userRepository) List(page, limit string) ([]*domain.User, error) {
 	limitInt := toInt(limit, defaultLimit)
 	offset := (pageInt - 1) * limitInt
 
+	// Base query
 	query := `
 		SELECT *
 		FROM users
-		ORDER BY created_at DESC
-		LIMIT $1 OFFSET $2
 	`
 
+	args := []interface{}{}
+	argCount := 1
+
+	// If search exists, add WHERE
+	if search != "" {
+		query += fmt.Sprintf(`WHERE name ILIKE $%d OR email ILIKE $%d `, argCount, argCount+1)
+		args = append(args, "%"+search+"%", "%"+search+"%")
+		argCount += 2
+	}
+
+	// Pagination
+	query += fmt.Sprintf("ORDER BY created_at DESC LIMIT $%d OFFSET $%d", argCount, argCount+1)
+	args = append(args, limitInt, offset)
+
 	var users []domain.User
-	if err := r.db.Select(&users, query, limitInt, offset); err != nil {
+	if err := r.db.Select(&users, query, args...); err != nil {
 		return nil, err
 	}
 
@@ -115,10 +129,8 @@ func (r *userRepository) GetUserById(id string) (*domain.User, error) {
 	return &user, nil
 }
 
-
-
 func (r *userRepository) GetMyUserDetails(id string) (*domain.User, error) {
-	
+
 	var user domain.User
 	query := "SELECT * FROM users WHERE is_deleted = false AND id = $1"
 
@@ -128,7 +140,6 @@ func (r *userRepository) GetMyUserDetails(id string) (*domain.User, error) {
 	}
 	return &user, nil
 }
-
 
 func (r *userRepository) BlockUserByAdmin(id string) error {
 	now := time.Now()
