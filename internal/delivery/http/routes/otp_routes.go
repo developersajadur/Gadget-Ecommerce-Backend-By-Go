@@ -9,20 +9,10 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-// RegisterOtpRoutes sets up OTP-related endpoints
-func RegisterOtpRoutes(r *mux.Router, db *sqlx.DB) {
+func RegisterOtpRoutes(r *mux.Router, db *sqlx.DB, userUC usecase.UserUsecase) {
 	otpRepo := repository.NewOtpRepository(db)
-
-	// Usecases
 	otpUC := usecase.NewOtpUsecase(otpRepo)
+	otpHandler := handlers.NewOtpHandler(userUC, otpUC)
 
-	// Handler
-	otpHandler := handlers.NewOtpHandler(otpUC)
-
-	// OTP routes
-	// Send OTP for login or verification
-	r.HandleFunc("/otp/send", otpHandler.Create).Methods("POST")
-
-	// Verify OTP
-	// r.HandleFunc("/otp/verify", userHandler.VerifyOTP).Methods("POST")
+	r.HandleFunc("/send", otpHandler.Create).Methods("POST")
 }

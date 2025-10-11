@@ -42,4 +42,7 @@ ecommerce/
 
 
 
-make run
+make 
+
+migrate create -ext sql -dir ./migrations -seq init_schema
+migrate create -ext sql -dir migrations create_otps_table

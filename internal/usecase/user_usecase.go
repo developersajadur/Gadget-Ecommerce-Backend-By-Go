@@ -18,6 +18,7 @@ type UserUsecase interface {
 	List(page string, limit string, search string) ([]*domain.User, error)
 	Login(email, password string) (string, error)
 	GetUserById(id string) (*domain.User, error)
+	FindByEmail(email string) (*domain.User, error)
 	GetMyUserDetails(id string) (*domain.User, error)
 	BlockUserByAdmin(id string) error
 	UnblockUserByAdmin(id string) error
@@ -35,8 +36,6 @@ func NewUserUsecase(userRepo repository.UserRepository, otpUC OtpUsecase) UserUs
 	}
 }
 
-
-
 func (uc *userUsecase) Create(name, emailAddr, password string) (*domain.User, error) {
 	existing, err := uc.userRepo.FindByEmail(emailAddr)
 	if err == nil && existing != nil {
@@ -46,42 +45,41 @@ func (uc *userUsecase) Create(name, emailAddr, password string) (*domain.User, e
 		return nil, err
 	}
 
+	hashedPassword, err := utils.HashPassword(password)
+	if err != nil {
+		return nil, err
+	}
+
 	user := &domain.User{
 		Name:      name,
 		Email:     emailAddr,
-		Password:  password,
+		Password:  hashedPassword,
 		Role:      domain.RoleUser,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
 
-	hashedPassword, err := utils.HashPassword(user.Password)
-	if err != nil {
-		return nil, err
-	}
-	user.Password = hashedPassword
-
 	if err := uc.userRepo.Create(user); err != nil {
 		return nil, err
 	}
 
-	// Create OTP
-	if user.ID != "" {
-		otpData, err := uc.otpUC.Create(user.ID)
+	// Try to create OTP and send email
+	go func() {
+		otpData, err := uc.otpUC.CreateAndSendEmail(user.ID, user.Name, user.Email)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create OTP: %w", err)
+			fmt.Println("OTP creation failed:", err)
+			return
 		}
 
-		// Send OTP email
 		emailData := map[string]string{
 			"Name": user.Name,
 			"OTP":  otpData.Code,
 		}
+
 		if err := email.SendEmail(user.Email, "Verify Your Account", "templates/otp.html", emailData); err != nil {
-			fmt.Println(err)
-			return nil, fmt.Errorf("failed to send OTP email: %w", err)
+			fmt.Println("Failed to send OTP email:", err)
 		}
-	}
+	}()
 
 	return user, nil
 }
@@ -129,6 +127,16 @@ func (uc *userUsecase) Login(email, password string) (string, error) {
 func (uc *userUsecase) GetUserById(id string) (*domain.User, error) {
 
 	user, err := uc.userRepo.GetUserById(id)
+
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
+func (uc *userUsecase) FindByEmail(email string) (*domain.User, error) {
+
+	user, err := uc.userRepo.FindByEmail(email)
 
 	if err != nil {
 		return nil, err
