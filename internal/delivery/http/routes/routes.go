@@ -17,8 +17,12 @@ func SetupRoutes() *mux.Router {
 
 	Router.Use(middleware.Cors)
 
-	// Initialize User Usecase
-	userUC := usecase.NewUserUsecase(repository.NewUserRepository(dbConn), nil)
+	// Initialize Usecases
+	userRepo := repository.NewUserRepository(dbConn)
+	otpRepo := repository.NewOtpRepository(dbConn)
+
+	otpUC := usecase.NewOtpUsecase(otpRepo)
+	userUC := usecase.NewUserUsecase(userRepo, otpUC)
 
 	// Versioned API
 	apiV1 := Router.PathPrefix("/api/v1").Subrouter()
@@ -28,8 +32,8 @@ func SetupRoutes() *mux.Router {
 	otpRouter := apiV1.PathPrefix("/otps").Subrouter()
 
 	// Register routes
-	RegisterUserRoutes(userRouter, dbConn)
-	RegisterOtpRoutes(otpRouter, dbConn, userUC)
+	RegisterUserRoutes(userRouter, userUC)
+	RegisterOtpRoutes(otpRouter, userUC, otpUC)
 
 	return Router
 }

@@ -4,20 +4,13 @@ import (
 	"ecommerce/internal/delivery/http/handlers"
 	"ecommerce/internal/domain"
 	"ecommerce/internal/infra/middleware"
-	"ecommerce/internal/infra/repository"
 	"ecommerce/internal/usecase"
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/jmoiron/sqlx"
 )
 
-func RegisterUserRoutes(r *mux.Router, db *sqlx.DB) {
-	userRepo := repository.NewUserRepository(db)
-	otpRepo := repository.NewOtpRepository(db)
-
-	otpUC := usecase.NewOtpUsecase(otpRepo)
-	userUC := usecase.NewUserUsecase(userRepo, otpUC)
+func RegisterUserRoutes(r *mux.Router, userUC usecase.UserUsecase ) {
 
 	userHandler := handlers.NewUserHandler(userUC)
 
