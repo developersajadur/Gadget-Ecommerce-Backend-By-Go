@@ -12,4 +12,5 @@ func RegisterOtpRoutes(r *mux.Router, userUC usecase.UserUsecase, otpUc usecase.
 	otpHandler := handlers.NewOtpHandler(userUC, otpUc)
 
 	r.HandleFunc("/send", otpHandler.Create).Methods("POST")
+	r.HandleFunc("/verify", otpHandler.VerifyOtp).Methods("POST")
 }

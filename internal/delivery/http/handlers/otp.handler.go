@@ -45,3 +45,25 @@ func (h *OtpHandler) Create(w http.ResponseWriter, r *http.Request) {
 		"otp_id":  otpEntry.ID,
 	}, http.StatusOK, "")
 }
+
+
+
+func (h *OtpHandler) VerifyOtp(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Code string `json:"code"`
+	}
+
+	helpers.BodyDecoder(w, r, &req)
+
+	otpEntry, err := h.otpUC.VerifyOtp(req.Code)
+	if err != nil {
+		helpers.SendError(w, err, http.StatusBadRequest, "Invalid or expired OTP")
+		return
+	}
+
+	helpers.SendResponse(w, map[string]interface{}{
+		"user_id": otpEntry.UserId,
+		"otp_id":  otpEntry.ID,
+		"message": "OTP verified successfully",
+	}, http.StatusOK, "")
+}

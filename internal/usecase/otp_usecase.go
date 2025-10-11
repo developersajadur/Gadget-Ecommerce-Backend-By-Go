@@ -11,6 +11,7 @@ import (
 
 type OtpUsecase interface {
 	CreateAndSendEmail(userID string, userName string, userEmail string) (*domain.Otp, error)
+	VerifyOtp( code string) (*domain.Otp, error)
 }
 
 type otpUsecase struct {
@@ -46,4 +47,8 @@ func (uc *otpUsecase) CreateAndSendEmail(userID string, userName string, userEma
 	}
 
 	return createdOtp, nil
+}
+
+func (uc *otpUsecase) VerifyOtp(code string) (*domain.Otp, error) {
+	return uc.otpRepo.VerifyOtp(code)
 }

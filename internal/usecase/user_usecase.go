@@ -6,7 +6,6 @@ import (
 	"ecommerce/internal/domain"
 	"ecommerce/internal/infra/repository"
 	"ecommerce/pkg/utils"
-	"ecommerce/pkg/utils/email"
 	"ecommerce/pkg/utils/jwt"
 	"errors"
 	"fmt"
@@ -63,21 +62,12 @@ func (uc *userUsecase) Create(name, emailAddr, password string) (*domain.User, e
 		return nil, err
 	}
 
+
 	// Try to create OTP and send email
 	go func() {
-		otpData, err := uc.otpUC.CreateAndSendEmail(user.ID, user.Name, user.Email)
+		_, err := uc.otpUC.CreateAndSendEmail(user.ID, user.Name, user.Email)
 		if err != nil {
-			fmt.Println("OTP creation failed:", err)
-			return
-		}
-
-		emailData := map[string]string{
-			"Name": user.Name,
-			"OTP":  otpData.Code,
-		}
-
-		if err := email.SendEmail(user.Email, "Verify Your Account", "templates/otp.html", emailData); err != nil {
-			fmt.Println("Failed to send OTP email:", err)
+			fmt.Println("OTP creation and send failed:", err)
 		}
 	}()
 
@@ -108,6 +98,9 @@ func (uc *userUsecase) Login(email, password string) (string, error) {
 
 	if usr.IsBlocked {
 		return "", errors.New("user is blocked")
+	}
+	if !usr.IsVerified {
+		return "", errors.New("user is not verified")
 	}
 
 	payload := jwt.JwtCustomClaims{

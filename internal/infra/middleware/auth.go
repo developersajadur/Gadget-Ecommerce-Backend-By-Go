@@ -41,6 +41,21 @@ func Auth(userUC usecase.UserUsecase, roles []string) func(http.Handler) http.Ha
 				return
 			}
 
+			if user.IsBlocked {
+				helpers.SendError(w, errors.New("user is blocked"), http.StatusForbidden, "User is blocked")
+				return
+			}
+
+			if !user.IsVerified {
+				helpers.SendError(w, errors.New("user is not verified"), http.StatusForbidden, "User is not verified")
+				return
+			}
+
+			if user.IsDeleted {
+				helpers.SendError(w, errors.New("user not found"), http.StatusNotFound, "User not found")
+				return
+			}
+
 			// Role check
 			if !allowedRoles[user.Role] {
 				helpers.SendError(w, nil, http.StatusForbidden, "Unauthorized: insufficient role")

@@ -64,12 +64,24 @@ func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	token, err := h.userUC.Login(req.Email, req.Password)
 	if err != nil {
-		helpers.SendError(w, err, http.StatusUnauthorized, "Invalid credentials or user not found")
+		var status int
+		switch err.Error() {
+		case "user not found":
+			status = http.StatusNotFound
+		case "user is blocked", "user is not verified":
+			status = http.StatusForbidden
+		case "invalid credentials":
+			status = http.StatusUnauthorized
+		default:
+			status = http.StatusInternalServerError
+		}
+		helpers.SendError(w, err, status, err.Error())
 		return
 	}
 
 	helpers.SendResponse(w, map[string]string{"token": token}, http.StatusOK, "Login successful")
 }
+
 
 func (h *UserHandler) GetUserById(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
