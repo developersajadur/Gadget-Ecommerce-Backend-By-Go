@@ -9,6 +9,9 @@ import (
 
 type CategoryUsecase interface {
 	Create(name string, description string, image *string) (*domain.Category, error)
+	GetBySlug(slug string) (*domain.Category, error)
+	GetById(id string) (*domain.Category, error)
+	List(page string, limit string, search string, filters map[string]string) ([]*domain.Category, error)
 }
 
 type categoryUsecase struct {
@@ -25,7 +28,7 @@ func (uc *categoryUsecase) Create(name, description string, image *string) (*dom
 
 	suffix := 1
 	for {
-		existing, err := uc.categoryRepo.FindBySlug(slug)
+		existing, err := uc.categoryRepo.GetBySlug(slug)
 		if err != nil && err.Error() != "sql: no rows in result set" {
 			return nil, err
 		}
@@ -38,4 +41,16 @@ func (uc *categoryUsecase) Create(name, description string, image *string) (*dom
 	}
 
 	return uc.categoryRepo.Create(name, slug, description, image)
+}
+
+func (uc *categoryUsecase) GetBySlug(slug string) (*domain.Category, error) {
+	return uc.categoryRepo.GetBySlug(slug)
+}
+
+func (uc *categoryUsecase) GetById(id string) (*domain.Category, error) {
+	return uc.categoryRepo.GetById(id)
+}
+
+func (uc *categoryUsecase) List(page string, limit string, search string, filters map[string]string) ([]*domain.Category, error) {
+	return uc.categoryRepo.List(page, limit, search, filters)
 }

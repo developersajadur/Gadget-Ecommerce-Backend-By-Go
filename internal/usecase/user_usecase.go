@@ -74,7 +74,7 @@ func (uc *userUsecase) Create(name, emailAddr, password string) (*domain.User, e
 }
 
 func (uc *userUsecase) List(page string, limit string, search string) ([]*domain.User, error) {
-	users, err := uc.userRepo.List(page, limit, search)
+	users, err := uc.userRepo.List(page, limit, search, map[string]string{})
 	if err != nil {
 		return nil, errors.New("internal error")
 	}

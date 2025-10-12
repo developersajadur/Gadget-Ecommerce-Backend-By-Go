@@ -49,7 +49,7 @@ func (h *UserHandler) List(w http.ResponseWriter, r *http.Request) {
 		helpers.SendError(w, err, http.StatusInternalServerError, "Failed to fetch users")
 		return
 	}
-	helpers.SendResponse(w, users, http.StatusOK, "Login successful")
+	helpers.SendResponse(w, users, http.StatusOK, "Users fetched successfully")
 
 }
 
@@ -79,7 +79,7 @@ func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	helpers.SendResponse(w, map[string]string{"token": token}, http.StatusOK, "Login successful")
+	helpers.SendResponse(w, map[string]string{"token": token}, http.StatusOK, "")
 }
 
 

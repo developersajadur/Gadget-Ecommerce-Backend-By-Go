@@ -14,6 +14,11 @@ func RegisterCategoryRoutes(r *mux.Router, categoryUC usecase.CategoryUsecase, u
 
 	categoryHandler := handlers.NewCategoryHandler(categoryUC)
 
+	// Public Routes
+	r.HandleFunc("/slug/{slug}", categoryHandler.GetBySlug).Methods("GET")
+	r.HandleFunc("/id/{id}", categoryHandler.GetById).Methods("GET")
+	r.HandleFunc("/list", categoryHandler.List).Methods("GET")
+
 	// Private Routes
 	r.Handle("/create", middleware.Middlewares(
 		http.HandlerFunc(categoryHandler.Create),

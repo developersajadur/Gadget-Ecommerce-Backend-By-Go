@@ -1,14 +1,20 @@
 package repository
 
 import (
+	"database/sql"
 	"ecommerce/internal/domain"
+	"ecommerce/pkg/querybuilder"
+	"strconv"
 
 	"github.com/jmoiron/sqlx"
 )
 
 type CategoryRepository interface {
 	Create(name string, slug string, description string, image *string) (*domain.Category, error)
-	FindBySlug(slug string) (*domain.Category, error)
+	GetBySlug(slug string) (*domain.Category, error)
+	GetById(id string) (*domain.Category, error)
+	List(page string, limit string, search string, filters map[string]string) ([]*domain.Category, error)
+
 }
 
 type categoryRepository struct {
@@ -35,18 +41,52 @@ func (r *categoryRepository) Create(name, slug, description string, image *strin
 	return &category, nil
 }
 
-func (r *categoryRepository) FindBySlug(slug string) (*domain.Category, error) {
-	query := `
-		SELECT id, name, slug, description, image, is_deleted, created_at, updated_at
-		FROM categories
-		WHERE slug = $1 AND is_deleted = FALSE
-	`
-
+func (r *categoryRepository) GetBySlug(slug string) (*domain.Category, error) {
 	var category domain.Category
+	query := `SELECT * FROM categories WHERE slug = $1 AND is_deleted = FALSE`
 	err := r.db.Get(&category, query, slug)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &category, nil
+}
+
+func (r *categoryRepository) GetById(id string) (*domain.Category, error) {
+	var category domain.Category
+	query := `SELECT * FROM categories WHERE id = $1 AND is_deleted = FALSE`
+	err := r.db.Get(&category, query, id)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &category, nil
+}
+
+func (r *categoryRepository) List(page, limit, search string, filters map[string]string) ([]*domain.Category, error) {
+	pageInt, _ := strconv.Atoi(page)
+	limitInt, _ := strconv.Atoi(limit)
+
+	qb := querybuilder.New("SELECT * FROM categories")
+	qb.SetPagination(pageInt, limitInt)
+	qb.SetSearch(search, []string{"name"})
+	qb.AddFilters(filters)
+
+	query, args := qb.Build()
+
+	var categories []domain.Category
+	if err := r.db.Select(&categories, query, args...); err != nil {
 		return nil, err
 	}
 
-	return &category, nil
+	categoryPtrs := make([]*domain.Category, len(categories))
+	for i := range categories {
+		categoryPtrs[i] = &categories[i]
+	}
+
+	return categoryPtrs, nil
 }
