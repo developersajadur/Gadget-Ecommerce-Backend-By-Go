@@ -20,9 +20,11 @@ func SetupRoutes() *mux.Router {
 	// Initialize Usecases
 	userRepo := repository.NewUserRepository(dbConn)
 	otpRepo := repository.NewOtpRepository(dbConn)
+	categoryRepo := repository.NewCategoryRepository(dbConn)
 
 	otpUC := usecase.NewOtpUsecase(otpRepo)
 	userUC := usecase.NewUserUsecase(userRepo, otpUC)
+	categoryUC := usecase.NewCategoryUsecase(categoryRepo)
 
 	// Versioned API
 	apiV1 := Router.PathPrefix("/api/v1").Subrouter()
@@ -30,10 +32,12 @@ func SetupRoutes() *mux.Router {
 	// Create subrouters for specific resources
 	userRouter := apiV1.PathPrefix("/users").Subrouter()
 	otpRouter := apiV1.PathPrefix("/otps").Subrouter()
+	categoryRouter := apiV1.PathPrefix("/categories").Subrouter()
 
 	// Register routes
 	RegisterUserRoutes(userRouter, userUC)
 	RegisterOtpRoutes(otpRouter, userUC, otpUC)
+	RegisterCategoryRoutes(categoryRouter, categoryUC, userUC)
 
 	return Router
 }

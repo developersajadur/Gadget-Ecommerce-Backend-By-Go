@@ -62,7 +62,6 @@ func (uc *userUsecase) Create(name, emailAddr, password string) (*domain.User, e
 		return nil, err
 	}
 
-
 	// Try to create OTP and send email
 	go func() {
 		_, err := uc.otpUC.CreateAndSendEmail(user.ID, user.Name, user.Email)
