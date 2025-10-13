@@ -31,7 +31,7 @@ ecommerce/
 │           ├── cors.go
 │           └── recovery.go
 ├── pkg/
-│   └── utils/               # Logger, helpers, etc.
+│   └── utils/
 ├── migrations/
 ├── scripts/
 ├── .env
