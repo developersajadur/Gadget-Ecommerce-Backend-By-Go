@@ -12,6 +12,8 @@ type CategoryUsecase interface {
 	GetBySlug(slug string) (*domain.Category, error)
 	GetById(id string) (*domain.Category, error)
 	List(page string, limit string, search string, filters map[string]string) ([]*domain.Category, error)
+	Update(id string, name string, description string, image *string) (*domain.Category, error)
+	SoftDelete(id string) error
 }
 
 type categoryUsecase struct {
@@ -53,4 +55,28 @@ func (uc *categoryUsecase) GetById(id string) (*domain.Category, error) {
 
 func (uc *categoryUsecase) List(page string, limit string, search string, filters map[string]string) ([]*domain.Category, error) {
 	return uc.categoryRepo.List(page, limit, search, filters)
+}
+
+func (uc *categoryUsecase) Update(id string, name string, description string, image *string) (*domain.Category, error) {
+	slug := helpers.GenerateSlug(name)
+	originalSlug := slug
+
+	suffix := 1
+	for {
+		existing, err := uc.categoryRepo.GetBySlug(slug)
+		if err != nil && err.Error() != "sql: no rows in result set" {
+			return nil, err
+		}
+
+		if existing == nil {
+			break
+		}
+		slug = fmt.Sprintf("%s-%d", originalSlug, suffix)
+		suffix++
+	}
+	return uc.categoryRepo.Update(id, name, slug, description, image)
+}
+
+func (uc *categoryUsecase) SoftDelete(id string) error {
+	return uc.categoryRepo.SoftDelete(id)
 }

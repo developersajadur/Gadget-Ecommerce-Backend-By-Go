@@ -14,7 +14,8 @@ type CategoryRepository interface {
 	GetBySlug(slug string) (*domain.Category, error)
 	GetById(id string) (*domain.Category, error)
 	List(page string, limit string, search string, filters map[string]string) ([]*domain.Category, error)
-
+	Update(id string, name string, slug string, description string, image *string) (*domain.Category, error)
+	SoftDelete(id string) error
 }
 
 type categoryRepository struct {
@@ -89,4 +90,42 @@ func (r *categoryRepository) List(page, limit, search string, filters map[string
 	}
 
 	return categoryPtrs, nil
+}
+
+func (r *categoryRepository) Update(id, name, slug, description string, image *string) (*domain.Category, error) {
+	query := `
+		UPDATE categories
+		SET name = $1, slug = $2, description = $3, image = $4, updated_at = NOW()
+		WHERE id = $5 AND is_deleted = FALSE
+		RETURNING id, name, slug, description, image, is_deleted, created_at, updated_at
+	`
+
+	var category domain.Category
+	err := r.db.QueryRowx(query, name, slug, description, image, id).StructScan(&category)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return &category, nil
+}
+
+func (r *categoryRepository) SoftDelete(id string) error {
+	query := `UPDATE categories SET is_deleted = TRUE, updated_at = NOW() WHERE id = $1 AND is_deleted = FALSE`
+	result, err := r.db.Exec(query, id)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return sql.ErrNoRows
+	}
+
+	return nil
 }

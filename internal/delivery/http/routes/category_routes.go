@@ -25,4 +25,14 @@ func RegisterCategoryRoutes(r *mux.Router, categoryUC usecase.CategoryUsecase, u
 		middleware.Auth(userUC, []string{domain.RoleAdmin}),
 	)).Methods("POST")
 
+	r.Handle("/update/{id}", middleware.Middlewares(
+		http.HandlerFunc(categoryHandler.Update),
+		middleware.Auth(userUC, []string{domain.RoleAdmin}),
+	)).Methods("PATCH")
+
+	r.Handle("/delete/{id}", middleware.Middlewares(
+		http.HandlerFunc(categoryHandler.SoftDelete),
+		middleware.Auth(userUC, []string{domain.RoleAdmin}),
+	)).Methods("DELETE")
+
 }

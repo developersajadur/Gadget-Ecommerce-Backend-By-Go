@@ -108,3 +108,59 @@ func (h *CategoryHandler) List(w http.ResponseWriter, r *http.Request) {
 
 	helpers.SendResponse(w, categories, http.StatusOK, "Categories fetched successfully")
 }
+
+func (h *CategoryHandler) Update(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+	if id == "" {
+		helpers.SendError(w, nil, http.StatusBadRequest, "ID is required")
+		return
+	}
+
+	if _, err := uuid.Parse(id); err != nil {
+		helpers.SendError(w, err, http.StatusBadRequest, "Invalid UUID format")
+		return
+	}
+
+	var req struct {
+		Name        string  `json:"name"`
+		Description string  `json:"description"`
+		Image       *string `json:"image"`
+	}
+
+	helpers.BodyDecoder(w, r, &req)
+
+	category, err := h.categoryUC.Update(id, req.Name, req.Description, req.Image)
+	if err != nil {
+		helpers.SendError(w, err, http.StatusInternalServerError, "Failed to update category")
+		return
+	}
+	if category == nil {
+		helpers.SendError(w, nil, http.StatusNotFound, "Category not found")
+		return
+	}
+	helpers.SendResponse(w, category, http.StatusOK, "Category updated successfully")
+}
+
+// SoftDelete handles soft deleting a category
+func (h *CategoryHandler) SoftDelete(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+	if id == "" {
+		helpers.SendError(w, nil, http.StatusBadRequest, "ID is required")
+		return
+	}
+
+	if _, err := uuid.Parse(id); err != nil {
+		helpers.SendError(w, err, http.StatusBadRequest, "Invalid UUID format")
+		return
+	}
+
+	err := h.categoryUC.SoftDelete(id)
+	if err != nil {
+		helpers.SendError(w, err, http.StatusInternalServerError, "Failed to delete category")
+		return
+	}
+
+	helpers.SendResponse(w, nil, http.StatusOK, "Category deleted successfully")
+}
