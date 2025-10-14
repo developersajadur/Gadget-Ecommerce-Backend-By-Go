@@ -1,7 +1,7 @@
 package usecase
 
 import (
-	"ecommerce/internal/domain"
+	"ecommerce/internal/models"
 	"ecommerce/internal/infra/repository"
 	"ecommerce/pkg/utils/email"
 	"ecommerce/pkg/utils/otp"
@@ -10,8 +10,8 @@ import (
 )
 
 type OtpUsecase interface {
-	CreateAndSendEmail(userID string, userName string, userEmail string) (*domain.Otp, error)
-	VerifyOtp( code string) (*domain.Otp, error)
+	CreateAndSendEmail(userID, userName, userEmail string) (*models.Otp, error)
+	VerifyOtp(code string) (*models.Otp, error)
 }
 
 type otpUsecase struct {
@@ -19,16 +19,16 @@ type otpUsecase struct {
 }
 
 func NewOtpUsecase(repo repository.OtpRepository) OtpUsecase {
-	return &otpUsecase{repo}
+	return &otpUsecase{otpRepo: repo}
 }
 
-func (uc *otpUsecase) CreateAndSendEmail(userID string, userName string, userEmail string) (*domain.Otp, error) {
-	otpEntry := &domain.Otp{
-		UserId:    userID,
+// CreateAndSendEmail generates an OTP, saves it to DB, and sends it via email.
+func (uc *otpUsecase) CreateAndSendEmail(userID, userName, userEmail string) (*models.Otp, error) {
+	otpEntry := &models.Otp{
+		UserID:    userID,
 		Email:     userEmail,
 		Code:      otp.GenerateOTP(),
 		ExpiresAt: time.Now().Add(5 * time.Minute),
-		CreatedAt: time.Now(),
 	}
 
 	createdOtp, err := uc.otpRepo.CreateAndSendEmail(otpEntry)
@@ -36,19 +36,21 @@ func (uc *otpUsecase) CreateAndSendEmail(userID string, userName string, userEma
 		return nil, err
 	}
 
-	// Send OTP email (non-blocking, log failure)
+	// Send OTP email asynchronously
 	emailData := map[string]string{
 		"Name": userName,
-		"OTP":  otpEntry.Code,
+		"OTP":  createdOtp.Code,
 	}
-
-	if err := email.SendEmail(userEmail, "Verify Your Account", "templates/otp.html", emailData); err != nil {
-		fmt.Println("Failed to send OTP email:", err)
-	}
+	go func() {
+		if err := email.SendEmail(userEmail, "Verify Your Account", "templates/otp.html", emailData); err != nil {
+			fmt.Println("Failed to send OTP email:", err)
+		}
+	}()
 
 	return createdOtp, nil
 }
 
-func (uc *otpUsecase) VerifyOtp(code string) (*domain.Otp, error) {
+// VerifyOtp validates the OTP code, marks it verified, and updates the user's verified status.
+func (uc *otpUsecase) VerifyOtp(code string) (*models.Otp, error) {
 	return uc.otpRepo.VerifyOtp(code)
 }

@@ -1,87 +1,81 @@
 package querybuilder
 
 import (
-	"fmt"
+	"gorm.io/gorm"
 	"strings"
 )
 
-type QueryBuilder struct {
-	BaseQuery string
-	Filters   map[string]string
-	Search    string
+type GormQueryBuilder struct {
+	DB       *gorm.DB
+	Filters  map[string]interface{}
+	Search   string
 	SearchCols []string
-	Limit     int
-	Offset    int
-	OrderBy   string
-	Args      []interface{}
-	argCount  int
+	Page     int
+	Limit    int
+	OrderBy  string
 }
 
-func New(baseQuery string) *QueryBuilder {
-	return &QueryBuilder{
-		BaseQuery: baseQuery,
-		Filters:   make(map[string]string),
-		Args:      []interface{}{},
-		argCount:  1,
+func New(db *gorm.DB) *GormQueryBuilder {
+	return &GormQueryBuilder{
+		DB:       db,
+		Filters:  map[string]interface{}{},
+		Page:     1,
+		Limit:    20,
+		OrderBy:  "created_at desc",
 	}
 }
 
-func (qb *QueryBuilder) SetPagination(page, limit int) {
-	if page < 1 {
-		page = 1
-	}
-	if limit < 1 {
-		limit = 20
-	}
-	qb.Limit = limit
-	qb.Offset = (page - 1) * limit
-}
-
-func (qb *QueryBuilder) SetSearch(search string, columns []string) {
-	qb.Search = search
-	qb.SearchCols = columns
-}
-
-func (qb *QueryBuilder) AddFilters(filters map[string]string) {
+func (qb *GormQueryBuilder) SetFilters(filters map[string]interface{}) {
 	for k, v := range filters {
 		qb.Filters[k] = v
 	}
 }
 
-func (qb *QueryBuilder) Build() (string, []interface{}) {
-	var whereParts []string
+func (qb *GormQueryBuilder) SetSearch(search string, cols []string) {
+	qb.Search = search
+	qb.SearchCols = cols
+}
 
-	// Handle filters
-	for key, val := range qb.Filters {
-		whereParts = append(whereParts, fmt.Sprintf("%s = $%d", key, qb.argCount))
-		qb.Args = append(qb.Args, val)
-		qb.argCount++
+func (qb *GormQueryBuilder) SetPagination(page, limit int) {
+	if page > 0 {
+		qb.Page = page
+	}
+	if limit > 0 {
+		qb.Limit = limit
+	}
+}
+
+func (qb *GormQueryBuilder) SetOrder(order string) {
+	if order != "" {
+		qb.OrderBy = order
+	}
+}
+
+func (qb *GormQueryBuilder) Build() *gorm.DB {
+	db := qb.DB
+
+	// Filters
+	for k, v := range qb.Filters {
+		db = db.Where(k+" = ?", v)
 	}
 
-	// Handle search
+	// Search
 	if qb.Search != "" && len(qb.SearchCols) > 0 {
 		var searchParts []string
+		var args []interface{}
 		for _, col := range qb.SearchCols {
-			searchParts = append(searchParts, fmt.Sprintf("%s ILIKE $%d", col, qb.argCount))
+			searchParts = append(searchParts, col+" ILIKE ?")
+			args = append(args, "%"+qb.Search+"%")
 		}
-		qb.Args = append(qb.Args, "%"+qb.Search+"%")
-		whereParts = append(whereParts, "("+strings.Join(searchParts, " OR ")+")")
-		qb.argCount++
+		db = db.Where(strings.Join(searchParts, " OR "), args...)
 	}
 
-	query := qb.BaseQuery
-	if len(whereParts) > 0 {
-		query += " WHERE " + strings.Join(whereParts, " AND ")
-	}
+	// Pagination
+	offset := (qb.Page - 1) * qb.Limit
+	db = db.Offset(offset).Limit(qb.Limit)
 
-	if qb.OrderBy != "" {
-		query += fmt.Sprintf(" ORDER BY %s", qb.OrderBy)
-	} else {
-		query += " ORDER BY created_at DESC"
-	}
+	// Order
+	db = db.Order(qb.OrderBy)
 
-	query += fmt.Sprintf(" LIMIT $%d OFFSET $%d", qb.argCount, qb.argCount+1)
-	qb.Args = append(qb.Args, qb.Limit, qb.Offset)
-
-	return query, qb.Args
+	return db
 }

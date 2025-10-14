@@ -7,8 +7,8 @@ CREATE TABLE products (
     name VARCHAR(255) NOT NULL,
     slug VARCHAR(255) UNIQUE NOT NULL,
     description TEXT,
-    price INTEGER NOT NULL CHECK (price >= 0),
-    discount_price INTEGER CHECK (discount_price >= 0),
+    price NUMERIC(10,2) NOT NULL CHECK (price >= 0),
+    discount_price NUMERIC(10,2) CHECK (discount_price >= 0),
     stock INTEGER NOT NULL CHECK (stock >= 0),
     category_id UUID,
     images JSONB DEFAULT '[]',
@@ -18,9 +18,6 @@ CREATE TABLE products (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Optional: Create category and brand foreign key references when available
--- ALTER TABLE products
--- ADD CONSTRAINT fk_category FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL,
 
 -- Indexes for faster search
 CREATE INDEX idx_products_name ON products(name);

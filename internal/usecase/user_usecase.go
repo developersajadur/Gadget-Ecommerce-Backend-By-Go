@@ -1,24 +1,23 @@
 package usecase
 
 import (
-	"database/sql"
-	"ecommerce/internal/config"
-	"ecommerce/internal/domain"
-	"ecommerce/internal/infra/repository"
-	"ecommerce/pkg/utils"
-	"ecommerce/pkg/utils/jwt"
 	"errors"
 	"fmt"
-	"time"
+
+	"ecommerce/internal/config"
+	"ecommerce/internal/infra/repository"
+	"ecommerce/internal/models"
+	"ecommerce/pkg/utils"
+	"ecommerce/pkg/utils/jwt"
 )
 
 type UserUsecase interface {
-	Create(name, email, password string) (*domain.User, error)
-	List(page string, limit string, search string) ([]*domain.User, error)
+	Create(name, email, password string) (*models.User, error)
+	List(page, limit, search string) ([]*models.User, error)
 	Login(email, password string) (string, error)
-	GetUserById(id string) (*domain.User, error)
-	FindByEmail(email string) (*domain.User, error)
-	GetMyUserDetails(id string) (*domain.User, error)
+	GetUserById(id string) (*models.User, error)
+	FindByEmail(email string) (*models.User, error)
+	GetMyUserDetails(id string) (*models.User, error)
 	BlockUserByAdmin(id string) error
 	UnblockUserByAdmin(id string) error
 }
@@ -35,13 +34,10 @@ func NewUserUsecase(userRepo repository.UserRepository, otpUC OtpUsecase) UserUs
 	}
 }
 
-func (uc *userUsecase) Create(name, emailAddr, password string) (*domain.User, error) {
-	existing, err := uc.userRepo.FindByEmail(emailAddr)
-	if err == nil && existing != nil {
+func (uc *userUsecase) Create(name, emailAddr, password string) (*models.User, error) {
+	existing, _ := uc.userRepo.FindByEmail(emailAddr)
+	if existing != nil {
 		return nil, errors.New("user already exists")
-	}
-	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		return nil, err
 	}
 
 	hashedPassword, err := utils.HashPassword(password)
@@ -49,20 +45,17 @@ func (uc *userUsecase) Create(name, emailAddr, password string) (*domain.User, e
 		return nil, err
 	}
 
-	user := &domain.User{
+	user := &models.User{
 		Name:      name,
 		Email:     emailAddr,
 		Password:  hashedPassword,
-		Role:      domain.RoleUser,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
 	}
 
 	if err := uc.userRepo.Create(user); err != nil {
 		return nil, err
 	}
 
-	// Try to create OTP and send email
+	// Asynchronously create OTP and send email
 	go func() {
 		_, err := uc.otpUC.CreateAndSendEmail(user.ID, user.Name, user.Email)
 		if err != nil {
@@ -73,39 +66,30 @@ func (uc *userUsecase) Create(name, emailAddr, password string) (*domain.User, e
 	return user, nil
 }
 
-func (uc *userUsecase) List(page string, limit string, search string) ([]*domain.User, error) {
-	users, err := uc.userRepo.List(page, limit, search, map[string]string{})
-	if err != nil {
-		return nil, errors.New("internal error")
-	}
-	return users, nil
+func (uc *userUsecase) List(page, limit, search string) ([]*models.User, error) {
+	return uc.userRepo.List(page, limit, search, map[string]interface{}{})
 }
 
 func (uc *userUsecase) Login(email, password string) (string, error) {
-	usr, err := uc.userRepo.Login(email, password)
-	if err != nil {
+	user, err := uc.userRepo.Login(email, password)
+	if err != nil || user == nil {
 		return "", errors.New("invalid credentials")
 	}
 
-	if usr == nil {
+	if user.IsDeleted {
 		return "", errors.New("user not found")
 	}
-
-	if usr.IsDeleted {
-		return "", errors.New("user not found")
-	}
-
-	if usr.IsBlocked {
+	if user.IsBlocked {
 		return "", errors.New("user is blocked")
 	}
-	if !usr.IsVerified {
+	if !user.IsVerified {
 		return "", errors.New("user is not verified")
 	}
 
 	payload := jwt.JwtCustomClaims{
-		UserId: usr.ID,
-		Email:  usr.Email,
-		Role:   usr.Role,
+		UserId: user.ID,
+		Email:  user.Email,
+		Role:   user.Role,
 	}
 
 	token, err := jwt.GenerateJWT([]byte(config.ENV.JWTSecret), payload)
@@ -116,66 +100,44 @@ func (uc *userUsecase) Login(email, password string) (string, error) {
 	return token, nil
 }
 
-func (uc *userUsecase) GetUserById(id string) (*domain.User, error) {
-
-	user, err := uc.userRepo.GetUserById(id)
-
-	if err != nil {
-		return nil, err
-	}
-	return user, nil
+func (uc *userUsecase) GetUserById(id string) (*models.User, error) {
+	return uc.userRepo.GetUserById(id)
 }
 
-func (uc *userUsecase) FindByEmail(email string) (*domain.User, error) {
-
-	user, err := uc.userRepo.FindByEmail(email)
-
-	if err != nil {
-		return nil, err
-	}
-	return user, nil
+func (uc *userUsecase) FindByEmail(email string) (*models.User, error) {
+	return uc.userRepo.FindByEmail(email)
 }
 
-func (uc *userUsecase) GetMyUserDetails(id string) (*domain.User, error) {
-	user, err := uc.userRepo.GetMyUserDetails(id)
-	if err != nil {
-		return nil, err
-	}
-	return user, nil
+func (uc *userUsecase) GetMyUserDetails(id string) (*models.User, error) {
+	return uc.userRepo.GetMyUserDetails(id)
 }
 
 func (uc *userUsecase) BlockUserByAdmin(id string) error {
-	isExistingUser, err := uc.userRepo.GetUserById(id)
+	user, err := uc.userRepo.GetUserById(id)
 	if err != nil {
 		return err
 	}
-	if isExistingUser == nil {
+	if user == nil {
 		return errors.New("user not found")
 	}
-	if isExistingUser.IsBlocked {
+	if user.IsBlocked {
 		return errors.New("user is already blocked")
 	}
-	err = uc.userRepo.BlockUserByAdmin(id)
-	if err != nil {
-		return err
-	}
-	return nil
+
+	return uc.userRepo.BlockUserByAdmin(id)
 }
 
 func (uc *userUsecase) UnblockUserByAdmin(id string) error {
-	isExistingUser, err := uc.userRepo.GetUserById(id)
+	user, err := uc.userRepo.GetUserById(id)
 	if err != nil {
 		return err
 	}
-	if isExistingUser == nil {
+	if user == nil {
 		return errors.New("user not found")
 	}
-	if !isExistingUser.IsBlocked {
+	if !user.IsBlocked {
 		return errors.New("user is already unblocked")
 	}
-	err = uc.userRepo.UnblockUserByAdmin(id)
-	if err != nil {
-		return err
-	}
-	return nil
+
+	return uc.userRepo.UnblockUserByAdmin(id)
 }

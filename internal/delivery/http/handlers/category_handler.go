@@ -73,7 +73,7 @@ func (h *CategoryHandler) GetById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if category == nil {
-		helpers.SendError(w, nil, http.StatusNotFound, "Category not found")
+		helpers.SendError(w, nil, http.StatusNotFound, "category not found")
 		return
 	}
 

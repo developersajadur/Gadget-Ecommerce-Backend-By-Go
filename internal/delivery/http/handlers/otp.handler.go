@@ -62,7 +62,7 @@ func (h *OtpHandler) VerifyOtp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	helpers.SendResponse(w, map[string]interface{}{
-		"user_id": otpEntry.UserId,
+		"user_id": otpEntry.UserID,
 		"otp_id":  otpEntry.ID,
 		"message": "OTP verified successfully",
 	}, http.StatusOK, "")

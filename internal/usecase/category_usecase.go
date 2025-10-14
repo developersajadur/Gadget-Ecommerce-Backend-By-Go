@@ -1,18 +1,18 @@
 package usecase
 
 import (
-	"ecommerce/internal/domain"
+	"ecommerce/internal/models"
 	"ecommerce/internal/infra/repository"
 	"ecommerce/pkg/helpers"
 	"fmt"
 )
 
 type CategoryUsecase interface {
-	Create(name string, description string, image *string) (*domain.Category, error)
-	GetBySlug(slug string) (*domain.Category, error)
-	GetById(id string) (*domain.Category, error)
-	List(page string, limit string, search string, filters map[string]string) ([]*domain.Category, error)
-	Update(id string, name string, description string, image *string) (*domain.Category, error)
+	Create(name string, description string, image *string) (*models.Category, error)
+	GetBySlug(slug string) (*models.Category, error)
+	GetById(id string) (*models.Category, error)
+	List(page string, limit string, search string, filters map[string]string) ([]*models.Category, error)
+	Update(id string, name string, description string, image *string) (*models.Category, error)
 	SoftDelete(id string) error
 }
 
@@ -21,10 +21,10 @@ type categoryUsecase struct {
 }
 
 func NewCategoryUsecase(repo repository.CategoryRepository) CategoryUsecase {
-	return &categoryUsecase{repo}
+	return &categoryUsecase{categoryRepo: repo}
 }
 
-func (uc *categoryUsecase) Create(name, description string, image *string) (*domain.Category, error) {
+func (uc *categoryUsecase) Create(name, description string, image *string) (*models.Category, error) {
 	slug := helpers.GenerateSlug(name)
 	originalSlug := slug
 
@@ -45,19 +45,23 @@ func (uc *categoryUsecase) Create(name, description string, image *string) (*dom
 	return uc.categoryRepo.Create(name, slug, description, image)
 }
 
-func (uc *categoryUsecase) GetBySlug(slug string) (*domain.Category, error) {
+func (uc *categoryUsecase) GetBySlug(slug string) (*models.Category, error) {
 	return uc.categoryRepo.GetBySlug(slug)
 }
 
-func (uc *categoryUsecase) GetById(id string) (*domain.Category, error) {
+func (uc *categoryUsecase) GetById(id string) (*models.Category, error) {
 	return uc.categoryRepo.GetById(id)
 }
 
-func (uc *categoryUsecase) List(page string, limit string, search string, filters map[string]string) ([]*domain.Category, error) {
-	return uc.categoryRepo.List(page, limit, search, filters)
+func (uc *categoryUsecase) List(page string, limit string, search string, filters map[string]string) ([]*models.Category, error) {
+	convertedFilters := make(map[string]interface{}, len(filters))
+	for k, v := range filters {
+		convertedFilters[k] = v
+	}
+	return uc.categoryRepo.List(page, limit, search, convertedFilters)
 }
 
-func (uc *categoryUsecase) Update(id string, name string, description string, image *string) (*domain.Category, error) {
+func (uc *categoryUsecase) Update(id string, name string, description string, image *string) (*models.Category, error) {
 	slug := helpers.GenerateSlug(name)
 	originalSlug := slug
 

@@ -12,32 +12,41 @@ import (
 var Router *mux.Router
 
 func SetupRoutes() *mux.Router {
-	dbConn, _ := db.NewConnection()
-	Router = mux.NewRouter()
+dbConn, err := db.ConnectDB()
+if err != nil {
+	panic(err)
+}
 
+
+	Router = mux.NewRouter()
 	Router.Use(middleware.Cors)
 
-	// Initialize Usecases
+	// Initialize Repositories
 	userRepo := repository.NewUserRepository(dbConn)
 	otpRepo := repository.NewOtpRepository(dbConn)
 	categoryRepo := repository.NewCategoryRepository(dbConn)
+	productRepo := repository.NewProductRepository(dbConn)
 
+	// Initialize Usecases
 	otpUC := usecase.NewOtpUsecase(otpRepo)
 	userUC := usecase.NewUserUsecase(userRepo, otpUC)
 	categoryUC := usecase.NewCategoryUsecase(categoryRepo)
+	productUC := usecase.NewProductUsecase(productRepo, categoryUC)
 
-	// Versioned API
+	// API Versioning
 	apiV1 := Router.PathPrefix("/api/v1").Subrouter()
 
-	// Create subrouters for specific resources
+	// Subrouters for resources
 	userRouter := apiV1.PathPrefix("/users").Subrouter()
 	otpRouter := apiV1.PathPrefix("/otps").Subrouter()
 	categoryRouter := apiV1.PathPrefix("/categories").Subrouter()
+	productRouter := apiV1.PathPrefix("/products").Subrouter()
 
 	// Register routes
 	RegisterUserRoutes(userRouter, userUC)
 	RegisterOtpRoutes(otpRouter, userUC, otpUC)
 	RegisterCategoryRoutes(categoryRouter, categoryUC, userUC)
+	RegisterProductRoutes(productRouter, productUC, userUC)
 
 	return Router
 }

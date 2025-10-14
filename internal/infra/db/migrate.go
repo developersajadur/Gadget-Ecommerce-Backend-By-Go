@@ -1,41 +1,20 @@
 package db
 
 import (
-	"fmt"
+	"ecommerce/internal/models"
 	"log"
-	"path/filepath"
-
-	_ "github.com/lib/pq"
-	"github.com/golang-migrate/migrate/v4"
-	"github.com/golang-migrate/migrate/v4/database/postgres"
-	_ "github.com/golang-migrate/migrate/v4/source/file"
-	"github.com/jmoiron/sqlx"
 )
 
-func RunMigrations(db *sqlx.DB) {
-	// Use absolute path for safety
-	migrationsPath, err := filepath.Abs("./migrations")
-	if err != nil {
-		log.Fatal("Failed to resolve migrations folder:", err)
-	}
-
-	driver, err := postgres.WithInstance(db.DB, &postgres.Config{})
-	if err != nil {
-		log.Fatal("Failed to create migrate driver:", err)
-	}
-
-	m, err := migrate.NewWithDatabaseInstance(
-		"file://"+migrationsPath,
-		"postgres",
-		driver,
+func RunMigrations() {
+	err := DB.AutoMigrate(
+		&models.User{},
+		&models.Category{},
+		&models.Product{},
+		&models.ProductImage{},
+		&models.Otp{},
 	)
 	if err != nil {
-		log.Fatal("Failed to create migrate instance:", err)
+		log.Fatalf("Migration failed: %v", err)
 	}
-
-	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
-		log.Fatal("Migration failed:", err)
-	}
-
-	fmt.Println("Migrations applied successfully")
+	log.Println("Database migrated successfully")
 }

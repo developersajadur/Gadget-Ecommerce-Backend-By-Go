@@ -9,26 +9,17 @@ import (
 
 	"ecommerce/internal/config"
 	"ecommerce/internal/delivery/http/routes"
-	migrateDb "ecommerce/internal/infra/db"
+	"ecommerce/internal/infra/db"
 	"ecommerce/internal/infra/middleware"
 	"ecommerce/pkg/utils/email"
 )
 
-
-
-
-
 func init() {
 	config.Init()
 
-	db, err := migrateDb.NewConnection()
-	if err != nil {
-		fmt.Println("Database connection failed:", err)
-		os.Exit(1)
-	}
+	db.ConnectDB()
 
-	fmt.Println("Database connected successfully")
-	migrateDb.RunMigrations(db)
+	db.RunMigrations()
 }
 
 func runServer() {
@@ -47,20 +38,17 @@ func runServer() {
 		From:     config.ENV.Email,
 	})
 
-	// Setup routes
 	router := routes.SetupRoutes()
 
-	// Rate limiter: 4 requests per second globally
-	rateLimiter := middleware.NewRateLimiterMiddleware(middleware.RateLimiterConfig{
+	handler := middleware.NewRateLimiterMiddleware(middleware.RateLimiterConfig{
 		Limit:  4,
 		Period: 1 * time.Second,
-	})
+	})(router)
 
-	handler := rateLimiter(router)
-
-	fmt.Println("Starting Server At:", config.ENV.Port)
+	fmt.Printf("Server running at port %s\n", config.ENV.Port)
 	if err := http.ListenAndServe(":"+config.ENV.Port, handler); err != nil {
-		fmt.Println("Error starting server:", err)
+		fmt.Printf("Error starting server: %v\n", err)
+		os.Exit(1)
 	}
 }
 

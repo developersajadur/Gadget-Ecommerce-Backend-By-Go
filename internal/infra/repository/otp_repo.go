@@ -1,87 +1,69 @@
 package repository
 
 import (
-	"ecommerce/internal/domain"
+	"ecommerce/internal/models"
 	"time"
-
-	"github.com/jmoiron/sqlx"
+	"errors"
+	"gorm.io/gorm"
 )
 
 type OtpRepository interface {
-	CreateAndSendEmail(otp *domain.Otp) (*domain.Otp, error)
-	VerifyOtp(code string) (*domain.Otp, error)
+	CreateAndSendEmail(otp *models.Otp) (*models.Otp, error)
+	VerifyOtp(code string) (*models.Otp, error)
 }
 
 type otpRepository struct {
-	db *sqlx.DB
+	db *gorm.DB
 }
 
-func NewOtpRepository(db *sqlx.DB) OtpRepository {
+func NewOtpRepository(db *gorm.DB) OtpRepository {
 	return &otpRepository{db: db}
 }
 
-func (r *otpRepository) CreateAndSendEmail(otp *domain.Otp) (*domain.Otp, error) {
-	query := `
-		INSERT INTO otps (user_id, email, code, expires_at, created_at)
-		VALUES ($1, $2, $3, $4, $5)
-		RETURNING id
-	`
-
-	err := r.db.QueryRowx(query, otp.UserId, otp.Email, otp.Code, otp.ExpiresAt, otp.CreatedAt).Scan(&otp.ID)
-	if err != nil {
+func (r *otpRepository) CreateAndSendEmail(otp *models.Otp) (*models.Otp, error) {
+	if err := r.db.Create(otp).Error; err != nil {
 		return nil, err
 	}
-
 	return otp, nil
 }
 
+func (r *otpRepository) VerifyOtp(code string) (*models.Otp, error) {
+	var otp models.Otp
 
+	err := r.db.Where("code = ? AND expires_at > ? AND verified = false", code, time.Now()).First(&otp).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	} else if err != nil {
+		return nil, err
+	}
 
+	// Transaction: mark OTP verified and update user
+	err = r.db.Transaction(func(tx *gorm.DB) error {
+		now := time.Now()
 
+		if err := tx.Model(&models.Otp{}).Where("id = ?", otp.ID).
+			Updates(map[string]interface{}{
+				"verified":    true,
+				"verified_at": &now,
+			}).Error; err != nil {
+			return err
+		}
 
-func (r *otpRepository) VerifyOtp(code string) (*domain.Otp, error) {
-	var otp domain.Otp
+		if err := tx.Model(&models.User{}).Where("id = ? AND is_deleted = false AND is_blocked = false", otp.UserID).
+			Update("is_verified", true).Error; err != nil {
+			return err
+		}
 
-	// 1. Find the OTP
-	query := `
-		SELECT * FROM otps
-		WHERE code = $1 AND expires_at > NOW() AND verified = FALSE
-		LIMIT 1
-	`
-	err := r.db.Get(&otp, query, code)
+		// update struct for return
+		otp.Verified = true
+		otp.VerifiedAt = &now
+
+		return nil
+	})
+
 	if err != nil {
 		return nil, err
 	}
-
-	// Start transaction
-	tx, err := r.db.Beginx()
-	if err != nil {
-		return nil, err
-	}
-
-	// 2. Mark OTP as verified
-	_, err = tx.Exec(`UPDATE otps SET verified = TRUE, verified_at = NOW() WHERE id = $1`, otp.ID)
-	if err != nil {
-		tx.Rollback()
-		return nil, err
-	}
-
-	// 3. Update user as verified
-	_, err = tx.Exec(`UPDATE users SET is_verified = TRUE WHERE id = $1 AND is_deleted = false AND is_blocked = false`, otp.UserId)
-	if err != nil {
-		tx.Rollback()
-		return nil, err
-	}
-
-	// Commit transaction
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-
-	// 4. Update local struct
-	now := time.Now()
-	otp.Verified = true
-	otp.VerifiedAt = &now
 
 	return &otp, nil
 }

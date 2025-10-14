@@ -2,37 +2,44 @@ package routes
 
 import (
 	"ecommerce/internal/delivery/http/handlers"
-	"ecommerce/internal/domain"
 	"ecommerce/internal/infra/middleware"
+	"ecommerce/internal/models"
 	"ecommerce/internal/usecase"
 	"net/http"
 
 	"github.com/gorilla/mux"
 )
 
-func RegisterCategoryRoutes(r *mux.Router, categoryUC usecase.CategoryUsecase, userUC usecase.UserUsecase) {
+const (
+	RouteSlug   = "/slug/{slug}"
+	RouteID     = "/id/{id}"
+	RouteList   = "/list"
+	RouteCreate = "/create"
+	RouteUpdate = "/update/{id}"
+	RouteDelete = "/delete/{id}"
+)
 
+func RegisterCategoryRoutes(r *mux.Router, categoryUC usecase.CategoryUsecase, userUC usecase.UserUsecase) {
 	categoryHandler := handlers.NewCategoryHandler(categoryUC)
 
-	// Public Routes
-	r.HandleFunc("/slug/{slug}", categoryHandler.GetBySlug).Methods("GET")
-	r.HandleFunc("/id/{id}", categoryHandler.GetById).Methods("GET")
-	r.HandleFunc("/list", categoryHandler.List).Methods("GET")
+	// Public routes
+	r.HandleFunc(RouteSlug, categoryHandler.GetBySlug).Methods("GET")
+	r.HandleFunc(RouteID, categoryHandler.GetById).Methods("GET")
+	r.HandleFunc(RouteList, categoryHandler.List).Methods("GET")
 
-	// Private Routes
-	r.Handle("/create", middleware.Middlewares(
+	// Admin routes
+	r.Handle(RouteCreate, middleware.Middlewares(
 		http.HandlerFunc(categoryHandler.Create),
-		middleware.Auth(userUC, []string{domain.RoleAdmin}),
+		middleware.Auth(userUC, []string{models.RoleAdmin}),
 	)).Methods("POST")
 
-	r.Handle("/update/{id}", middleware.Middlewares(
+	r.Handle(RouteUpdate, middleware.Middlewares(
 		http.HandlerFunc(categoryHandler.Update),
-		middleware.Auth(userUC, []string{domain.RoleAdmin}),
+		middleware.Auth(userUC, []string{models.RoleAdmin}),
 	)).Methods("PATCH")
 
-	r.Handle("/delete/{id}", middleware.Middlewares(
+	r.Handle(RouteDelete, middleware.Middlewares(
 		http.HandlerFunc(categoryHandler.SoftDelete),
-		middleware.Auth(userUC, []string{domain.RoleAdmin}),
+		middleware.Auth(userUC, []string{models.RoleAdmin}),
 	)).Methods("DELETE")
-
 }

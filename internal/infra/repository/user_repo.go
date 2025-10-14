@@ -1,132 +1,104 @@
 package repository
 
 import (
-	"ecommerce/internal/domain"
+	"ecommerce/internal/models"
 	"ecommerce/pkg/querybuilder"
 	"ecommerce/pkg/utils"
 	"errors"
-	"strconv"
 	"time"
 
-	"github.com/jmoiron/sqlx"
+	"gorm.io/gorm"
 )
 
 type UserRepository interface {
-	Create(user *domain.User) error
-	List(page string, limit string, search string, filters map[string]string) ([]*domain.User, error)
-	FindByEmail(email string) (*domain.User, error)
-	Login(email string, password string) (*domain.User, error)
-	GetUserById(id string) (*domain.User, error)
-	GetMyUserDetails(id string) (*domain.User, error)
+	Create(user *models.User) error
+	List(page, limit, search string, filters map[string]interface{}) ([]*models.User, error)
+	FindByEmail(email string) (*models.User, error)
+	Login(email, password string) (*models.User, error)
+	GetUserById(id string) (*models.User, error)
+	GetMyUserDetails(id string) (*models.User, error)
 	BlockUserByAdmin(id string) error
 	UnblockUserByAdmin(id string) error
 }
 
 type userRepository struct {
-	db *sqlx.DB
+	db *gorm.DB
 }
 
-func NewUserRepository(db *sqlx.DB) UserRepository {
+func NewUserRepository(db *gorm.DB) UserRepository {
 	return &userRepository{db: db}
 }
 
-func (r *userRepository) Create(user *domain.User) error {
-	query := `
-		INSERT INTO users (name, email, password, role, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6)
-		RETURNING id
-	`
-
-	now := time.Now()
-	user.CreatedAt = now
-	user.UpdatedAt = now
-
-	// Pass all 6 values including role
-	return r.db.QueryRowx(query, user.Name, user.Email, user.Password, user.Role, user.CreatedAt, user.UpdatedAt).Scan(&user.ID)
+// Create inserts a new user
+func (r *userRepository) Create(user *models.User) error {
+	return r.db.Create(user).Error
 }
 
-func (r *userRepository) List(page, limit, search string, filters map[string]string) ([]*domain.User, error) {
-	pageInt, _ := strconv.Atoi(page)
-	limitInt, _ := strconv.Atoi(limit)
+// List returns paginated, filtered, and searched users
+func (r *userRepository) List(page, limit, search string, filters map[string]interface{}) ([]*models.User, error) {
+	pageInt, limitInt := utils.ParsePagination(page, limit)
 
-	qb := querybuilder.New("SELECT * FROM users")
+	qb := querybuilder.New(r.db.Model(&models.User{}).Where("is_deleted = ?", false))
 	qb.SetPagination(pageInt, limitInt)
 	qb.SetSearch(search, []string{"name", "email"})
-	qb.AddFilters(filters)
+	qb.SetFilters(filters)
 
-	query, args := qb.Build()
-
-	var users []domain.User
-	if err := r.db.Select(&users, query, args...); err != nil {
-		return nil, err
-	}
-
-	userPtrs := make([]*domain.User, len(users))
-	for i := range users {
-		userPtrs[i] = &users[i]
-	}
-
-	return userPtrs, nil
+	var users []*models.User
+	err := qb.Build().Find(&users).Error
+	return users, err
 }
 
-
-
-func (r *userRepository) FindByEmail(email string) (*domain.User, error) {
-	var user domain.User
-	query := "SELECT * FROM users WHERE email = $1"
-	err := r.db.Get(&user, query, email)
+// FindByEmail fetches a single active user by email
+func (r *userRepository) FindByEmail(email string) (*models.User, error) {
+	var user models.User
+	err := r.db.Where("email = ? AND is_deleted = false", email).First(&user).Error
 	if err != nil {
 		return nil, err
 	}
 	return &user, nil
 }
 
-func (r *userRepository) Login(email string, password string) (*domain.User, error) {
-	usr, err := r.FindByEmail(email)
+// Login validates credentials
+func (r *userRepository) Login(email, password string) (*models.User, error) {
+	user, err := r.FindByEmail(email)
 	if err != nil {
 		return nil, err
 	}
-	if !utils.CheckPassword(usr.Password, password) {
+	if !utils.CheckPassword(user.Password, password) {
 		return nil, errors.New("invalid password")
 	}
-	return usr, nil
+	return user, nil
 }
 
-func (r *userRepository) GetUserById(id string) (*domain.User, error) {
-	var user domain.User
-	query := "SELECT * FROM users WHERE is_deleted = false AND id = $1"
-	err := r.db.Get(&user, query, id)
+// GetUserById fetches a user by ID
+func (r *userRepository) GetUserById(id string) (*models.User, error) {
+	var user models.User
+	err := r.db.Where("id = ? AND is_deleted = false", id).First(&user).Error
 	if err != nil {
 		return nil, err
 	}
 	return &user, nil
 }
 
-func (r *userRepository) GetMyUserDetails(id string) (*domain.User, error) {
-
-	var user domain.User
-	query := "SELECT * FROM users WHERE is_deleted = false AND id = $1"
-
-	err := r.db.Get(&user, query, id)
-	if err != nil {
-		return nil, err
-	}
-	return &user, nil
+// GetMyUserDetails returns the same as GetUserById
+func (r *userRepository) GetMyUserDetails(id string) (*models.User, error) {
+	return r.GetUserById(id)
 }
 
+// BlockUserByAdmin sets is_blocked to true
 func (r *userRepository) BlockUserByAdmin(id string) error {
-	now := time.Now()
-	query := "UPDATE users SET is_blocked = true, updated_at = $1 WHERE id = $2"
-	_, err := r.db.Exec(query, now, id)
-	return err
+	return r.db.Model(&models.User{}).Where("id = ?", id).
+		Updates(map[string]interface{}{
+			"is_blocked": true,
+			"updated_at": time.Now(),
+		}).Error
 }
 
+// UnblockUserByAdmin sets is_blocked to false
 func (r *userRepository) UnblockUserByAdmin(id string) error {
-	now := time.Now()
-	query := "UPDATE users SET is_blocked = false, updated_at = $1 WHERE id = $2"
-	_, err := r.db.Exec(query, now, id)
-	return err
+	return r.db.Model(&models.User{}).Where("id = ?", id).
+		Updates(map[string]interface{}{
+			"is_blocked": false,
+			"updated_at": time.Now(),
+		}).Error
 }
-
-
-
