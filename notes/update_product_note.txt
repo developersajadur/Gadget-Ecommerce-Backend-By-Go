@@ -1,0 +1,39 @@
+
+Example Request Body (for Postman or cURL)
+You can send:
+
+{
+  "update_data": {
+    "stock": 51
+  }
+}
+
+
+Updates only the stock, leaves images untouched.
+
+Add images:
+
+{
+  "images": {
+    "add": ["https://example.com/new.jpg"]
+  }
+}
+
+
+Delete specific images:
+
+{
+  "images": {
+    "delete": ["https://example.com/old.jpg"]
+  }
+}
+
+
+Replace all images:
+
+{
+  "images": {
+    "replace": true,
+    "add": ["https://example.com/new1.jpg","https://example.com/new2.jpg"]
+  }
+}

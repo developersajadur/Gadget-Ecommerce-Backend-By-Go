@@ -17,7 +17,7 @@ const (
 	ProductRouteList   = "/list"
 	ProductRouteCreate = "/create"
 	ProductRouteUpdate = "/update/{id}"
-	ProductRouteDelete = "/delete/{id}"
+	ProductRouteSoftDelete = "/delete/{id}"
 )
 
 func RegisterProductRoutes(r *mux.Router, productUC usecase.ProductUsecase, userUC usecase.UserUsecase) {
@@ -34,13 +34,13 @@ func RegisterProductRoutes(r *mux.Router, productUC usecase.ProductUsecase, user
 		middleware.Auth(userUC, []string{models.RoleAdmin}),
 	)).Methods("POST")
 
-	// r.Handle(ProductRouteUpdate, middleware.Middlewares(
-	// 	http.HandlerFunc(productHandler.Update),
-	// 	middleware.Auth(userUC, []string{models.RoleAdmin}),
-	// )).Methods("PATCH")
+	r.Handle(ProductRouteUpdate, middleware.Middlewares(
+		http.HandlerFunc(productHandler.Update),
+		middleware.Auth(userUC, []string{models.RoleAdmin}),
+	)).Methods("PATCH")
 
-	// r.Handle(ProductRouteDelete, middleware.Middlewares(
-	// 	http.HandlerFunc(productHandler.SoftDelete),
-	// 	middleware.Auth(userUC, []string{models.RoleAdmin}),
-	// )).Methods("DELETE")
+	r.Handle(ProductRouteSoftDelete, middleware.Middlewares(
+		http.HandlerFunc(productHandler.SoftDelete),
+		middleware.Auth(userUC, []string{models.RoleAdmin}),
+	)).Methods("DELETE")
 }
