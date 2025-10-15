@@ -24,9 +24,9 @@ func RegisterProductRoutes(r *mux.Router, productUC usecase.ProductUsecase, user
 	productHandler := handlers.NewProductHandler(productUC)
 
 	// Public Routes
-	// r.HandleFunc(ProductRouteSlug, productHandler.GetBySlug).Methods("GET")
-	// r.HandleFunc(ProductRouteID, productHandler.GetById).Methods("GET")
-	// r.HandleFunc(ProductRouteList, productHandler.List).Methods("GET")
+	r.HandleFunc(ProductRouteSlug, productHandler.GetBySlug).Methods("GET")
+	r.HandleFunc(ProductRouteID, productHandler.GetById).Methods("GET")
+	r.HandleFunc(ProductRouteList, productHandler.List).Methods("GET")
 
 	// Private Routes (Admin only)
 	r.Handle(ProductRouteCreate, middleware.Middlewares(

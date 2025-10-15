@@ -13,6 +13,7 @@ type ProductUsecase interface {
 	Create(name, description string, price, discountPrice float64, stock int, categoryID string, images []string) (*models.Product, error)
 	GetBySlug(slug string) (*models.Product, error)
 	GetById(id string) (*models.Product, error)
+	List(page string, limit string, search string, filters map[string]string) ([]*models.Product, error)
 }
 
 type productUsecase struct {
@@ -84,4 +85,13 @@ func (uc *productUsecase) GetById(id string) (*models.Product, error) {
 		return nil, errors.New("product not found")
 	}
 	return product, nil
+}
+
+
+func (uc *productUsecase) List(page string, limit string, search string, filters map[string]string) ([]*models.Product, error) {
+	convertedFilters := make(map[string]interface{}, len(filters))
+	for k, v := range filters {
+		convertedFilters[k] = v
+	}
+	return uc.productRepo.List(page, limit, search, convertedFilters)
 }

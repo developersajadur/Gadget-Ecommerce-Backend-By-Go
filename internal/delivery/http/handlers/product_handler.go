@@ -5,6 +5,8 @@ import (
 	"ecommerce/pkg/helpers"
 	"fmt"
 	"net/http"
+
+	"github.com/gorilla/mux"
 )
 
 type ProductHandler struct {
@@ -50,4 +52,65 @@ func (h *ProductHandler) Create(w http.ResponseWriter, r *http.Request) {
 
     // Send the response
     helpers.SendResponse(w, product, http.StatusOK, "Product created successfully")
+}
+
+func (h *ProductHandler) GetBySlug(w http.ResponseWriter, r *http.Request) {
+   vars := mux.Vars(r)
+	slug := vars["slug"]
+    if slug == "" {
+        helpers.SendError(w, fmt.Errorf("slug is required"), http.StatusBadRequest, "Slug parameter is missing")
+        return
+    }
+
+    product, err := h.productUC.GetBySlug(slug)
+    if err != nil {
+        helpers.SendError(w, err, http.StatusInternalServerError, "Failed to fetch product")
+        return
+    }
+    if product == nil {
+        helpers.SendError(w, fmt.Errorf("product not found"), http.StatusNotFound, "Product not found")
+        return
+    }
+
+    helpers.SendResponse(w, product, http.StatusOK, "Product fetched successfully")
+}
+
+func (h *ProductHandler) GetById(w http.ResponseWriter, r *http.Request) {
+    vars := mux.Vars(r)
+	id := vars["id"]
+    if id == "" {
+        helpers.SendError(w, fmt.Errorf("id is required"), http.StatusBadRequest, "ID parameter is missing")
+        return
+    }
+
+    product, err := h.productUC.GetById(id)
+    if err != nil {
+        helpers.SendError(w, err, http.StatusInternalServerError, "Failed to fetch product")
+        return
+    }
+    if product == nil {
+        helpers.SendError(w, fmt.Errorf("product not found"), http.StatusNotFound, "Product not found")
+        return
+    }
+
+    helpers.SendResponse(w, product, http.StatusOK, "Product fetched successfully")
+}
+func (h *ProductHandler) List(w http.ResponseWriter, r *http.Request) {
+    page := r.URL.Query().Get("page")
+    limit := r.URL.Query().Get("limit")
+    search := r.URL.Query().Get("search")
+    filters := make(map[string]string)
+    for key, values := range r.URL.Query() {
+        if len(values) > 0 && key != "page" && key != "limit" && key != "search" {
+            filters[key] = values[0]
+        }
+    }
+
+    products, err := h.productUC.List(page, limit, search, filters)
+    if err != nil {
+        helpers.SendError(w, err, http.StatusInternalServerError, "Failed to list products")
+        return
+    }
+
+    helpers.SendResponse(w, products, http.StatusOK, "Products listed successfully")
 }
