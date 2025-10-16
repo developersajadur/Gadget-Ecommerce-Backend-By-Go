@@ -60,7 +60,7 @@ func (r *productRepository) Create(
 	return product, nil
 }
 
-// GetById fetches a product by ID, excluding soft-deleted ones
+
 func (r *productRepository) GetById(id string) (*models.Product, error) {
 	var product models.Product
 	if err := r.db.Preload("Images").Find(&product).Error; err != nil {
